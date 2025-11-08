@@ -1,0 +1,116 @@
+{% load static %}
+
+<div class="sidebar bg-white border-end shadow-sm">
+  <div class="sidebar-header p-3 border-bottom">
+    <div class="d-flex align-items-center">
+      <i class="fas fa-tachometer-alt text-primary fs-4 me-2"></i>
+      <h5 class="mb-0">لوحة التحكم</h5>
+    </div>
+  </div>
+  
+  <div class="sidebar-content">
+    <nav class="nav flex-column p-3">
+      <!-- Dashboard Overview -->
+      <a class="nav-link {% if nav_active == 'overview' %}active{% endif %}" href="{% url 'dashboard' %}">
+        <i class="fas fa-chart-pie me-2"></i>
+        <span>نظرة عامة</span>
+      </a>
+      
+      <!-- Orders Section -->
+      <div class="nav-section">
+        <h6 class="nav-section-title">إدارة الطلبات</h6>
+        <a class="nav-link {% if nav_active == 'orders' %}active{% endif %}" href="{% url 'dashboard-orders' %}">
+          <i class="fas fa-shopping-cart me-2"></i>
+          <span>الطلبات</span>
+          {% if pending_orders_count %}
+          <span class="badge bg-warning ms-auto">{{ pending_orders_count }}</span>
+          {% endif %}
+        </a>
+      </div>
+      
+      <!-- Stores Section -->
+      <div class="nav-section">
+        <h6 class="nav-section-title">إدارة المتاجر</h6>
+        <a class="nav-link {% if nav_active == 'stores' %}active{% endif %}" href="{% url 'dashboard-stores' %}">
+          <i class="fas fa-store me-2"></i>
+          <span>المتاجر</span>
+        </a>
+      </div>
+      
+      <!-- Products Section -->
+      <div class="nav-section">
+        <h6 class="nav-section-title">إدارة المنتجات</h6>
+        <a class="nav-link {% if nav_active == 'products' %}active{% endif %}" href="{% url 'dashboard-products' %}">
+          <i class="fas fa-box me-2"></i>
+          <span>المنتجات</span>
+        </a>
+        
+        <!-- Categories Submenu -->
+        <div class="nav-submenu">
+          <a class="nav-link submenu-link {% if nav_active == 'platform_categories' %}active{% endif %}" href="{% url 'dashboard-platform-categories' %}">
+            <i class="fas fa-store me-2"></i>
+            <span>تصنيفات المتاجر</span>
+          </a>
+          <a class="nav-link submenu-link {% if nav_active == 'product_categories' %}active{% endif %}" href="{% url 'dashboard-product-categories' %}">
+            <i class="fas fa-folder me-2"></i>
+            <span>تصنيفات المنتجات</span>
+          </a>
+        </div>
+      </div>
+      
+      <!-- Users Section -->
+      <div class="nav-section">
+        <h6 class="nav-section-title">إدارة المستخدمين</h6>
+        <a class="nav-link {% if nav_active == 'users' %}active{% endif %}" href="{% url 'dashboard-users' %}">
+          <i class="fas fa-users me-2"></i>
+          <span>المستخدمون</span>
+        </a>
+      </div>
+      
+      <!-- Reviews & Feedback -->
+      <div class="nav-section">
+        <h6 class="nav-section-title">التقييمات والمفضلة</h6>
+        <a class="nav-link {% if nav_active == 'reviews' %}active{% endif %}" href="{% url 'dashboard-reviews' %}">
+          <i class="fas fa-star me-2"></i>
+          <span>التقييمات</span>
+        </a>
+        <a class="nav-link {% if nav_active == 'wishlist' %}active{% endif %}" href="{% url 'dashboard-wishlist' %}">
+          <i class="fas fa-heart me-2"></i>
+          <span>المفضلة</span>
+        </a>
+      </div>
+      
+      <!-- System Section -->
+      <div class="nav-section">
+        <h6 class="nav-section-title">النظام</h6>
+        <a class="nav-link" href="/admin/" target="_blank">
+          <i class="fas fa-cog me-2"></i>
+          <span>Django Admin</span>
+          <i class="fas fa-external-link-alt ms-auto small"></i>
+        </a>
+      </div>
+    </nav>
+  </div>
+  
+  <!-- Sidebar Footer -->
+  <div class="sidebar-footer p-3 border-top mt-auto">
+    <div class="d-flex align-items-center">
+      <div class="flex-grow-1">
+        <small class="text-muted">مرحباً، {{ user.first_name|default:user.email|truncatechars:15 }}</small>
+      </div>
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+          <i class="fas fa-user"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="{% url 'admin:logout' %}">
+            <i class="fas fa-sign-out-alt me-2"></i>تسجيل الخروج
+          </a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Inline styles removed. Sidebar styling is managed in static/dashboard.css to avoid overlap
+     with main content and to keep RTL/LTR behavior consistent. -->

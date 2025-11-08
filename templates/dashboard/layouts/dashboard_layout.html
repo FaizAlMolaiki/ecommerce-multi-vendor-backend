@@ -1,0 +1,76 @@
+{% extends 'dashboard/base/base.html' %}
+
+{% block content %}
+<div class="dashboard-layout">
+  {% if page_header %}
+  <div class="dashboard-header mb-4">
+    {% include 'dashboard/includes/page_header.html' %}
+  </div>
+  {% endif %}
+  
+  {% block dashboard_content %}
+  <div class="row">
+    {% if show_stats %}
+    <div class="col-12 mb-4">
+      <div class="row">
+        {% for stat in dashboard_stats %}
+        <div class="col-md-3 mb-3">
+          {% include 'dashboard/components/cards/stat_card.html' with title=stat.title value=stat.value icon=stat.icon color=stat.color %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    
+    {% if show_charts %}
+    <div class="col-md-8 mb-4">
+      {% block charts_section %}
+      <div class="row">
+        {% for chart in dashboard_charts %}
+        <div class="col-md-6 mb-3">
+          {% include 'dashboard/components/cards/chart_card.html' with chart_id=chart.id chart_title=chart.title chart_data=chart.data chart_type=chart.type %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endblock %}
+    </div>
+    {% endif %}
+    
+    {% if show_sidebar %}
+    <div class="col-md-4 mb-4">
+      {% block sidebar_widgets %}
+      {% for widget in sidebar_widgets %}
+      <div class="mb-3">
+        {% include 'dashboard/components/cards/info_card.html' with card_header=widget.title card_content=widget.content card_class=widget.class %}
+      </div>
+      {% endfor %}
+      {% endblock %}
+    </div>
+    {% endif %}
+    
+    {% if show_recent_items %}
+    <div class="col-12">
+      {% block recent_items %}
+      <div class="row">
+        {% for item_section in recent_sections %}
+        <div class="col-md-6 mb-4">
+          <div class="card">
+            <div class="card-header">
+              <h6 class="mb-0">
+                <i class="{{ item_section.icon }} me-2"></i>{{ item_section.title }}
+              </h6>
+            </div>
+            <div class="card-body">
+              {{ item_section.content }}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endblock %}
+    </div>
+    {% endif %}
+  </div>
+  {% endblock %}
+</div>
+{% endblock %}

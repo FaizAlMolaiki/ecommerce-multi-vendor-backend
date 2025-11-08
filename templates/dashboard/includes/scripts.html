@@ -1,0 +1,43 @@
+{% load static %}
+
+<!-- Scripts loaded at the end for better performance -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/core.js' %}"></script>
+
+<!-- Performance monitoring script -->
+<script>
+// Simple performance monitoring
+window.addEventListener('load', function() {
+  if ('performance' in window) {
+    const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+    console.log('Page load time:', loadTime + 'ms');
+  }
+});
+
+// Show loading indicator for AJAX requests
+document.addEventListener('DOMContentLoaded', function() {
+  const loadingOverlay = document.getElementById('loading-overlay');
+  
+  // Show loading for form submissions
+  document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', function() {
+      if (loadingOverlay) {
+        loadingOverlay.classList.remove('d-none');
+        loadingOverlay.classList.add('d-flex');
+      }
+    });
+  });
+  
+  // Show loading for navigation links (except same-page anchors)
+  document.querySelectorAll('a[href]:not([href^="#"])').forEach(link => {
+    link.addEventListener('click', function(e) {
+      if (this.target !== '_blank' && loadingOverlay) {
+        setTimeout(() => {
+          loadingOverlay.classList.remove('d-none');
+          loadingOverlay.classList.add('d-flex');
+        }, 100);
+      }
+    });
+  });
+});
+</script>

@@ -1,0 +1,157 @@
+{% extends 'dashboard/layouts/list_layout.html' %}
+
+{% block title %}المتاجر - لوحة التحكم{% endblock %}
+
+{% with page_title='إدارة المتاجر' %}
+{% with create_url='/dashboard/stores/create/' %}
+{% with show_filters=True %}
+
+{% block filters %}
+    {{ block.super }}
+    <div class="col-md-3">
+        <label class="form-label">اسم المتجر</label>
+        <input type="text" name="name" class="form-control" value="{{ filters.name }}" placeholder="اكتب اسم المتجر...">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">بريد المالك</label>
+        <input type="text" name="owner" class="form-control" value="{{ filters.owner }}" placeholder="example@email.com">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">الحالة</label>
+        <select name="status" class="form-select">
+            <option value="">جميع الحالات</option>
+            <option value="pending" {% if filters.status == 'pending' %}selected{% endif %}>طلب قيد المراجعة</option>
+            <option value="under_review" {% if filters.status == 'under_review' %}selected{% endif %}>تحت المراجعة</option>
+            <option value="rejected" {% if filters.status == 'rejected' %}selected{% endif %}>مرفوض</option>
+            <option value="approved" {% if filters.status == 'approved' %}selected{% endif %}>معتمد</option>
+            <option value="active" {% if filters.status == 'active' %}selected{% endif %}>نشط</option>
+            <option value="suspended" {% if filters.status == 'suspended' %}selected{% endif %}>موقوف</option>
+            <option value="closed" {% if filters.status == 'closed' %}selected{% endif %}>مغلق</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">التصنيف</label>
+        <select name="category" class="form-select">
+            <option value="">جميع التصنيفات</option>
+            {% for c in categories %}
+                <option value="{{ c.id }}" {% if filters.category == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+{% endblock %}
+
+{% block table_headers %}
+    <th><i class="fas fa-hashtag me-1"></i>المعرف</th>
+    <th><i class="fas fa-store me-1"></i>اسم المتجر</th>
+    <th><i class="fas fa-user me-1"></i>المالك</th>
+    <th><i class="fas fa-tag me-1"></i>التصنيف</th>
+    <th><i class="fas fa-star me-1"></i>التقييم</th>
+    <th><i class="fas fa-box me-1"></i>المنتجات</th>
+    <th><i class="fas fa-toggle-on me-1"></i>الحالة</th>
+    <th><i class="fas fa-clock me-1"></i>تاريخ الإنشاء</th>
+    <th><i class="fas fa-cog me-1"></i>الإجراءات</th>
+{% endblock %}
+
+{% block table_row %}
+    <td>#{{ object.id }}</td>
+    <td>
+        <div class="d-flex align-items-center">
+            {% if object.logo_url %}
+            <img src="{{ object.logo_url }}" alt="{{ object.name }}" class="rounded me-2" style="width: 32px; height: 32px; object-fit: cover;">
+            {% endif %}
+            <div>
+                <div class="fw-bold">
+                    <a href="{% url 'dashboard-store-detail' object.id %}" class="text-decoration-none">
+                        <i class="fas fa-store-alt me-1"></i>{{ object.name }}
+                    </a>
+                </div>
+                {% if object.description %}
+                <small class="text-muted">{{ object.description|truncatechars:50 }}</small>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+    <td>
+        {% if object.owner %}
+            <a href="{% url 'dashboard-user-detail' object.owner.id %}" class="text-decoration-none">
+                <i class="fas fa-user-circle me-1"></i>{{ object.owner.email }}
+            </a>
+        {% else %}
+            <span class="text-muted">-</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if object.platform_category %}
+            <span class="badge bg-info">{{ object.platform_category.name }}</span>
+        {% else %}
+            <span class="text-muted">غير محدد</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="d-flex align-items-center">
+            <span class="me-1">{{ object.average_rating|floatformat:1 }}</span>
+            <div class="text-warning">
+                {% for i in "12345" %}
+                    {% if forloop.counter <= object.average_rating %}
+                        <i class="fas fa-star"></i>
+                    {% else %}
+                        <i class="far fa-star"></i>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </td>
+    <td>
+        <span class="badge bg-info">
+            <i class="fas fa-cubes me-1"></i>{{ object.product_count }}
+        </span>
+    </td>
+    <td>
+        <div class="d-flex align-items-center">
+            {% if object.status == 'active' %}
+                <i class="fas fa-toggle-on text-success me-2 fs-5"></i>
+                <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                    <i class="fas fa-check me-1"></i>مفعل
+                </span>
+            {% else %}
+                <i class="fas fa-toggle-off text-secondary me-2 fs-5"></i>
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">
+                    <i class="fas fa-pause me-1"></i>معطل
+                </span>
+            {% endif %}
+        </div>
+    </td>
+    <td>{{ object.created_at|date:"Y-m-d" }}</td>
+    <td>
+        <div class="btn-group btn-group-sm" role="group">
+            <a href="{% url 'dashboard-store-detail' object.id %}" class="btn btn-outline-primary" title="عرض التفاصيل">
+                <i class="fas fa-eye"></i>
+            </a>
+            <a href="{% url 'dashboard-store-edit' object.id %}" class="btn btn-outline-warning" title="تعديل المتجر">
+                <i class="fas fa-edit"></i>
+            </a>
+            <a href="{% url 'dashboard-store-delete' object.id %}" class="btn btn-outline-danger" title="حذف المتجر">
+                <i class="fas fa-trash"></i>
+            </a>
+        </div>
+        <form method="post" class="d-inline ms-1" onsubmit="console.log('Form data:', new FormData(this));">
+            {% csrf_token %}
+            <input type="hidden" name="store_id" value="{{ object.id }}">
+            {% if object.status == 'active' %}
+                <input type="hidden" name="action" value="deactivate">
+                <button type="submit" class="btn btn-sm btn-outline-secondary" title="تعطيل المتجر" onclick="return confirm('هل أنت متأكد من تعطيل هذا المتجر؟')">
+                    <i class="fas fa-toggle-off me-1"></i>تعطيل
+                </button>
+            {% else %}
+                <input type="hidden" name="action" value="activate">
+                <button type="submit" class="btn btn-sm btn-outline-success" title="تفعيل المتجر" onclick="return confirm('هل أنت متأكد من تفعيل هذا المتجر؟')">
+                    <i class="fas fa-toggle-on me-1"></i>تفعيل
+                </button>
+            {% endif %}
+        </form>
+    </td>
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}

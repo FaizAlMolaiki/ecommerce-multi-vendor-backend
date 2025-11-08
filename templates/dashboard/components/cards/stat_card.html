@@ -1,0 +1,30 @@
+{% comment %}
+مكون بطاقة إحصائية قابلة للإعادة
+الاستخدام: {% include 'dashboard/components/cards/stat_card.html' with title='طلبات اليوم' value=orders_count icon='fa-shopping-cart' color='primary' data_stat='orders' %}
+{% endcomment %}
+
+<div class="card card-stat {{ color|default:'primary' }} p-3" {% if data_stat %}data-stat="{{ data_stat }}"{% endif %}>
+    <div class="d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1">
+            <div class="stat-title">{{ title }}</div>
+            <div class="stat-number stat-value">{{ value|default:0 }}</div>
+            {% if subtitle %}
+            <small class="text-muted">{{ subtitle }}</small>
+            {% endif %}
+        </div>
+        {% if icon %}
+        <div class="stat-icon">
+            <i class="fas {{ icon }} fa-2x opacity-25"></i>
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if trend %}
+    <div class="mt-2 pt-2 border-top">
+        <small class="text-{{ trend.type|default:'muted' }}">
+            <i class="fas fa-arrow-{{ trend.direction|default:'right' }} me-1"></i>
+            {{ trend.text }}
+        </small>
+    </div>
+    {% endif %}
+</div>

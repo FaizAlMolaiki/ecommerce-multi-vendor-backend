@@ -1,0 +1,95 @@
+{% load static %}
+
+<div class="card chart-card {% if card_class %}{{ card_class }}{% endif %}">
+  {% if card_header %}
+  <div class="card-header {% if header_class %}{{ header_class }}{% endif %}">
+    <div class="d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center">
+        {% if card_icon %}
+        <i class="{{ card_icon }} me-2"></i>
+        {% endif %}
+        <h6 class="mb-0">{{ card_header }}</h6>
+      </div>
+      {% if chart_controls %}
+      <div class="chart-controls">
+        {{ chart_controls }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+  
+  <div class="card-body {% if body_class %}{{ body_class }}{% endif %}">
+    {% if chart_title %}
+    <h5 class="chart-title mb-3">{{ chart_title }}</h5>
+    {% endif %}
+    
+    {% if chart_description %}
+    <p class="text-muted small mb-3">{{ chart_description }}</p>
+    {% endif %}
+    
+    <div class="chart-container" style="position: relative; height: {{ chart_height|default:'300px' }};">
+      <canvas id="{{ chart_id }}" width="400" height="200"></canvas>
+    </div>
+    
+    {% if chart_legend %}
+    <div class="chart-legend mt-3">
+      <div class="row">
+        {% for legend_item in chart_legend %}
+        <div class="col-auto">
+          <div class="d-flex align-items-center">
+            <div class="legend-color me-2" style="width: 12px; height: 12px; background-color: {{ legend_item.color }}; border-radius: 2px;"></div>
+            <small>{{ legend_item.label }}</small>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    
+    {% if chart_stats %}
+    <div class="chart-stats mt-3 pt-3 border-top">
+      <div class="row">
+        {% for stat in chart_stats %}
+        <div class="col-md-4 text-center">
+          <div class="stat-value h5 mb-0 text-{{ stat.color|default:'primary' }}">{{ stat.value }}</div>
+          <small class="text-muted">{{ stat.label }}</small>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  
+  {% if card_footer %}
+  <div class="card-footer {% if footer_class %}{{ footer_class }}{% endif %}">
+    {{ card_footer }}
+  </div>
+  {% endif %}
+</div>
+
+{% if chart_data %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const ctx = document.getElementById('{{ chart_id }}').getContext('2d');
+  const chart = new Chart(ctx, {
+    type: '{{ chart_type|default:"line" }}',
+    data: {{ chart_data|safe }},
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: {% if show_chart_legend %}true{% else %}false{% endif %}
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+});
+</script>
+{% endif %}

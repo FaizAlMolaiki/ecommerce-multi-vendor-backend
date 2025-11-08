@@ -1,0 +1,141 @@
+{% extends 'dashboard/layouts/form_layout.html' %}
+
+{% block title %}
+{% if object %}تعديل العرض - {{ object.name }}{% else %}إضافة عرض جديد{% endif %} - لوحة التحكم
+{% endblock %}
+
+{% with page_title=object.name|default:'إضافة عرض جديد' %}
+{% with form_title='بيانات العرض' %}
+{% with form_icon='gift' %}
+{% with back_url='/dashboard/pricing/offers/' %}
+{% with submit_text='حفظ العرض' %}
+
+{% block form_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>المعلومات الأساسية</h6>
+            </div>
+            <div class="card-body">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.name label='اسم العرض' required=True %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {% include 'dashboard/components/forms/form_field.html' with field=form.offer_type label='نوع العرض' required=True %}
+                    </div>
+                    <div class="col-md-6">
+                        {% include 'dashboard/components/forms/form_field.html' with field=form.required_coupon label='الكوبون المطلوب (اختياري)' %}
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="fas fa-cogs me-2"></i>إعدادات العرض (JSON)</h6>
+                    </div>
+                    <div class="card-body">
+                        {% include 'dashboard/components/forms/form_field.html' with field=form.configuration label='إعدادات العرض' %}
+                        
+                        <div class="alert alert-info mt-2">
+                            <h6><i class="fas fa-info-circle me-2"></i>أمثلة على الإعدادات:</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>اشتر X واحصل على Y:</strong>
+                                    <pre class="small mt-1">{"buy_quantity": 2, "get_quantity": 1}</pre>
+                                    
+                                    <strong>باقة بسعر ثابت:</strong>
+                                    <pre class="small mt-1">{"bundle_price": 99.99, "product_ids": [1, 2, 3]}</pre>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>هدية عند مبلغ معين:</strong>
+                                    <pre class="small mt-1">{"threshold_amount": 200, "gift_product_id": 5}</pre>
+                                    
+                                    <strong>شحن مجاني عند مبلغ معين:</strong>
+                                    <pre class="small mt-1">{"threshold_amount": 150}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>نطاق التطبيق</h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>ملاحظة:</strong> إذا تُركت الحقول فارغة، سيتم تطبيق العرض على جميع المنصة.
+                </div>
+                
+                {% include 'dashboard/components/forms/form_field.html' with field=form.stores label='المتاجر المستهدفة' %}
+                {% include 'dashboard/components/forms/form_field.html' with field=form.categories label='الفئات المستهدفة' %}
+                {% include 'dashboard/components/forms/form_field.html' with field=form.products label='المنتجات المستهدفة' %}
+                {% include 'dashboard/components/forms/form_field.html' with field=form.variants label='المتغيرات المستهدفة' %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-cog me-2"></i>إعدادات العرض</h6>
+            </div>
+            <div class="card-body">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.active checkbox_label='عرض مفعل' %}
+                
+                <div class="row">
+                    <div class="col-12">
+                        {% include 'dashboard/components/forms/form_field.html' with field=form.start_at label='تاريخ البداية' %}
+                    </div>
+                    <div class="col-12">
+                        {% include 'dashboard/components/forms/form_field.html' with field=form.end_at label='تاريخ النهاية' %}
+                    </div>
+                </div>
+                
+                {% include 'dashboard/components/forms/form_field.html' with field=form.min_purchase_amount label='الحد الأدنى للمبلغ' %}
+                
+                <div class="row">
+                    <div class="col-6">
+                        {% include 'dashboard/components/forms/form_field.html' with field=form.priority label='الأولوية' %}
+                    </div>
+                    <div class="col-6 d-flex align-items-end">
+                        {% include 'dashboard/components/forms/form_field.html' with field=form.stackable checkbox_label='قابل للتكديس' %}
+                    </div>
+                </div>
+                
+                {% if object %}
+                <div class="mt-3 pt-3 border-top">
+                    <h6 class="text-muted">معلومات إضافية</h6>
+                    <p><small><strong>نوع العرض:</strong> {{ object.get_offer_type_display }}</small></p>
+                    <p><small><strong>تاريخ الإنشاء:</strong> {{ object.created_at|date:"Y-m-d H:i" }}</small></p>
+                    <p><small><strong>آخر تعديل:</strong> {{ object.updated_at|date:"Y-m-d H:i" }}</small></p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>نصائح</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled small">
+                    <li><i class="fas fa-check text-success me-1"></i> استخدم أولوية منخفضة للعروض المهمة</li>
+                    <li><i class="fas fa-check text-success me-1"></i> اختبر الإعدادات قبل التفعيل</li>
+                    <li><i class="fas fa-check text-success me-1"></i> حدد نطاق واضح لتجنب التعارض</li>
+                    <li><i class="fas fa-check text-success me-1"></i> راجع التكديس مع العروض الأخرى</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}

@@ -1,0 +1,425 @@
+{% extends 'dashboard/layouts/detail_layout.html' %}
+
+{% block title %}{{ object.email }} - تفاصيل المستخدم - لوحة التحكم{% endblock %}
+
+{% with page_title=object.email %}
+{% with back_url='/dashboard/users/' %}
+{% with edit_url='/dashboard/users/'|add:object.id|add:'/edit/' %}
+{% with delete_url='/dashboard/users/'|add:object.id|add:'/delete/' %}
+
+{% block action_buttons %}
+    {{ block.super }}
+    <a href="/dashboard/users/{{ object.id }}/reset-password/" class="btn btn-warning">
+        <i class="fas fa-key me-1"></i>إعادة تعيين كلمة المرور
+    </a>
+    {# Delivery profile management shortcuts #}
+    {% if object.is_delivery %}
+        {% if delivery_profile %}
+            <a href="{% url 'dashboard-delivery-profile-edit' user_id=object.id %}" class="btn btn-outline-info ms-1">
+                <i class="fas fa-truck me-1"></i>إدارة ملف المندوب
+            </a>
+            <a href="{% url 'dashboard-delivery-profile-delete' user_id=object.id %}" class="btn btn-outline-danger ms-1">
+                <i class="fas fa-trash me-1"></i>حذف ملف المندوب
+            </a>
+        {% else %}
+            <a href="{% url 'dashboard-delivery-profile-create' user_id=object.id %}" class="btn btn-outline-primary ms-1">
+                <i class="fas fa-plus me-1"></i>إنشاء ملف مندوب
+            </a>
+        {% endif %}
+    {% endif %}
+    
+    {# Staff profile management shortcuts #}
+    {% if object.is_staff %}
+        {% if staff_profile %}
+            <a href="{% url 'dashboard-staff-profile-edit' user_id=object.id %}" class="btn btn-outline-info ms-1">
+                <i class="fas fa-id-badge me-1"></i>إدارة ملف الموظف
+            </a>
+            <a href="{% url 'dashboard-staff-profile-delete' user_id=object.id %}" class="btn btn-outline-danger ms-1">
+                <i class="fas fa-trash me-1"></i>حذف ملف الموظف
+            </a>
+        {% else %}
+            <a href="{% url 'dashboard-staff-profile-create' user_id=object.id %}" class="btn btn-outline-primary ms-1">
+                <i class="fas fa-plus me-1"></i>إنشاء ملف موظف
+            </a>
+        {% endif %}
+    {% endif %}
+    <!-- Quick toggles -->
+    <form method="post" class="d-inline ms-1">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="toggle_active">
+        {% if object.is_active %}
+        <button type="submit" class="btn btn-outline-danger">
+            <i class="fas fa-user-slash me-1"></i>تعطيل
+        </button>
+        {% else %}
+        <button type="submit" class="btn btn-outline-success">
+            <i class="fas fa-user-check me-1"></i>تفعيل
+        </button>
+        {% endif %}
+    </form>
+    <form method="post" class="d-inline ms-1">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="toggle_staff">
+        <button type="submit" class="btn btn-outline-primary">
+            <i class="fas fa-user-tie me-1"></i>{% if object.is_staff %}إزالة موظف{% else %}تعيين موظف{% endif %}
+        </button>
+    </form>
+    {% if object.is_vendor is not None %}
+    <form method="post" class="d-inline ms-1">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="toggle_vendor">
+        <button type="submit" class="btn btn-outline-info">
+            <i class="fas fa-store me-1"></i>{% if object.is_vendor %}إزالة بائع{% else %}تعيين بائع{% endif %}
+        </button>
+    </form>
+    {% endif %}
+    {% if object.is_delivery is not None %}
+    <form method="post" class="d-inline ms-1">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="toggle_delivery">
+        <button type="submit" class="btn btn-outline-secondary">
+            <i class="fas fa-truck me-1"></i>{% if object.is_delivery %}إزالة مندوب{% else %}تعيين مندوب{% endif %}
+        </button>
+    </form>
+    {% endif %}
+{% endblock %}
+
+{% block detail_content %}
+<!-- Profile header -->
+<div class="card mb-3">
+    <div class="card-body d-flex align-items-center">
+        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 56px; height: 56px; font-size: 1.25rem;">
+            {{ object.name.0|default:object.email.0|upper }}
+        </div>
+        <div class="flex-grow-1">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <h5 class="mb-0">{{ object.email }}</h5>
+                {% if object.is_active %}
+                    <span class="badge bg-success">مفعل</span>
+                {% else %}
+                    <span class="badge bg-secondary">معطل</span>
+                {% endif %}
+                {% if object.is_staff %}
+                    <span class="badge bg-danger">موظف</span>
+                {% endif %}
+                {% if object.is_vendor %}
+                    <span class="badge bg-success">بائع</span>
+                {% endif %}
+                {% if object.is_delivery %}
+                    <span class="badge bg-info">مندوب</span>
+                {% endif %}
+            </div>
+            {% if object.name %}
+            <small class="text-muted">{{ object.name }}</small>
+            {% endif %}
+        </div>
+    </div>
+  </div>
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>المعلومات الشخصية
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>الاسم الكامل:</strong></p>
+                        <p class="text-muted">{{ object.name|default:"غير محدد" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>البريد الإلكتروني:</strong></p>
+                        <p class="text-muted">{{ object.email }}</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>رقم الهاتف:</strong></p>
+                        <p class="text-muted">{{ object.phone_number|default:"غير محدد" }}</p>
+                    </div>
+                </div>
+                
+                
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-tag me-2"></i>الأدوار والصلاحيات
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center p-3 border rounded">
+                            {% if object.is_active %}
+                                <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
+                                <p class="mb-0"><strong>حساب مفعل</strong></p>
+                            {% else %}
+                                <i class="fas fa-times-circle text-danger fa-2x mb-2"></i>
+                                <p class="mb-0"><strong>حساب معطل</strong></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center p-3 border rounded">
+                            {% if object.is_verified %}
+                                <i class="fas fa-shield-check text-success fa-2x mb-2"></i>
+                                <p class="mb-0"><strong>حساب محقق</strong></p>
+                            {% else %}
+                                <i class="fas fa-shield-alt text-warning fa-2x mb-2"></i>
+                                <p class="mb-0"><strong>غير محقق</strong></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center p-3 border rounded">
+                            {% if object.is_superuser %}
+                                <i class="fas fa-crown text-warning fa-2x mb-2"></i>
+                                <p class="mb-0"><strong>مدير عام</strong></p>
+                            {% else %}
+                                <i class="fas fa-user text-secondary fa-2x mb-2"></i>
+                                <p class="mb-0"><strong>مستخدم عادي</strong></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>الأدوار المخصصة:</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% if object.is_staff %}
+                                <span class="badge bg-danger fs-6">
+                                    <i class="fas fa-user-tie me-1"></i>موظف
+                                </span>
+                            {% endif %}
+                            {% if object.is_vendor %}
+                                <span class="badge bg-success fs-6">
+                                    <i class="fas fa-store me-1"></i>بائع
+                                </span>
+                            {% endif %}
+                            {% if object.is_delivery %}
+                                <span class="badge bg-info fs-6">
+                                    <i class="fas fa-truck me-1"></i>مندوب توصيل
+                                </span>
+                            {% endif %}
+                            {% if not object.is_staff and not object.is_vendor and not object.is_delivery %}
+                                <span class="badge bg-secondary fs-6">
+                                    <i class="fas fa-user me-1"></i>عميل
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if object.is_delivery and delivery_profile %}
+        <div class="card mt-3">
+            <div class="card-header d-flex align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-motorcycle me-2"></i>ملف المندوب
+                </h5>
+                {% if delivery_profile.suspended %}
+                    <span class="badge bg-danger ms-2">موقوف مؤقتاً</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <p class="mb-1 small text-muted">نوع المركبة</p>
+                        <div class="fw-semibold">{{ delivery_profile.vehicle_type|default:"—" }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1 small text-muted">حالة التحقق</p>
+                        <div>
+                            {% if delivery_profile.verification_status == 'APPROVED' %}
+                                <span class="badge bg-success">موثق</span>
+                            {% elif delivery_profile.verification_status == 'REJECTED' %}
+                                <span class="badge bg-danger">مرفوض</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">قيد المراجعة</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1 small text-muted">آخر ظهور</p>
+                        <div class="fw-semibold">{{ delivery_profile.last_seen_at|date:"Y-m-d H:i"|default:"—" }}</div>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-4">
+                        <p class="mb-1 small text-muted">إحداثيات حالية</p>
+                        <div class="fw-semibold">
+                            {% if delivery_profile.current_latitude and delivery_profile.current_longitude %}
+                                {{ delivery_profile.current_latitude }}, {{ delivery_profile.current_longitude }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1 small text-muted">صورة البطاقة</p>
+                        {% if delivery_profile.id_card_image %}
+                            <a href="{{ delivery_profile.id_card_image.url }}" target="_blank" class="btn btn-sm btn-outline-primary">عرض</a>
+                        {% else %}
+                            <span class="text-muted">غير متوفر</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1 small text-muted">صورة الرخصة</p>
+                        {% if delivery_profile.driver_license_image %}
+                            <a href="{{ delivery_profile.driver_license_image.url }}" target="_blank" class="btn btn-sm btn-outline-primary">عرض</a>
+                        {% else %}
+                            <span class="text-muted">غير متوفر</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if object.is_staff and staff_profile %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-id-badge me-2"></i>ملف الموظف
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <p class="mb-1 small text-muted">المسمى الوظيفي</p>
+                        <div class="fw-semibold">{{ staff_profile.job_title|default:"—" }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1 small text-muted">صورة البطاقة</p>
+                        {% if staff_profile.id_card_image %}
+                            <a href="{{ staff_profile.id_card_image.url }}" target="_blank" class="btn btn-sm btn-outline-primary">عرض</a>
+                        {% else %}
+                            <span class="text-muted">غير متوفر</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1 small text-muted">السيرة الذاتية</p>
+                        {% if staff_profile.resume_cv %}
+                            <a href="{{ staff_profile.resume_cv.url }}" target="_blank" class="btn btn-sm btn-outline-primary">تنزيل</a>
+                        {% else %}
+                            <span class="text-muted">غير متوفر</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if object.orders.count > 0 %}
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-shopping-cart me-2"></i>آخر الطلبات
+                </h5>
+                <a href="/dashboard/orders/?user={{ object.id }}" class="btn btn-sm btn-outline-primary">
+                    عرض جميع الطلبات
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>رقم الطلب</th>
+                                <th>التاريخ</th>
+                                <th>الإجمالي</th>
+                                <th>حالة الدفع</th>
+                                <th>حالة التنفيذ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in object.orders.all|slice:":5" %}
+                            <tr>
+                                <td>
+                                    <a href="/dashboard/orders/{{ order.id }}/">#{{ order.id }}</a>
+                                </td>
+                                <td>{{ order.created_at|date:"Y-m-d" }}</td>
+                                <td>{{ order.grand_total }}</td>
+                                <td><span class="badge bg-light text-dark">{{ order.payment_status }}</span></td>
+                                <td><span class="badge bg-light text-dark">{{ order.fulfillment_status }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if object.is_vendor and object.stores.count > 0 %}
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-store me-2"></i>المتاجر المملوكة
+                </h5>
+                <a href="/dashboard/stores/?owner={{ object.id }}" class="btn btn-sm btn-outline-success">
+                    عرض جميع المتاجر
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for store in object.stores.all|slice:":3" %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card border">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">{{ store.name }}</h6>
+                                <p class="card-text small text-muted">{{ store.description|truncatechars:50 }}</p>
+                                <div class="d-flex justify-content-between small">
+                                    <span>المنتجات: {{ store.product_count }}</span>
+                                    <span>التقييم: {{ store.average_rating|floatformat:1 }}</span>
+                                </div>
+                                <a href="/dashboard/stores/{{ store.id }}/" class="btn btn-sm btn-outline-primary mt-2">
+                                    عرض التفاصيل
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block sidebar_content %}
+    {% include 'dashboard/components/cards/stat_card.html' with title='إجمالي الطلبات' value=object.orders.count icon='shopping-cart' color='primary' %}
+    
+    {% if object.is_vendor %}
+        {% include 'dashboard/components/cards/stat_card.html' with title='عدد المتاجر' value=object.stores.count icon='store' color='success' %}
+    {% endif %}
+    
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0">معلومات النظام</h6>
+        </div>
+        <div class="card-body">
+            <p><small><strong>تاريخ التسجيل:</strong><br>{{ object.created_at|date:"Y-m-d H:i" }}</small></p>
+            {% if object.last_login %}
+            <p><small><strong>آخر دخول:</strong><br>{{ object.last_login|date:"Y-m-d H:i" }}</small></p>
+            {% else %}
+            <p><small><strong>آخر دخول:</strong><br>لم يسجل دخول بعد</small></p>
+            {% endif %}
+            <p><small><strong>معرف المستخدم:</strong><br>#{{ object.id }}</small></p>
+        </div>
+    </div>
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}

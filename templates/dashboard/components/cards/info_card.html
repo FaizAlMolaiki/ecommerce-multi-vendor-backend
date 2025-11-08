@@ -1,0 +1,68 @@
+{% load static %}
+
+<div class="card info-card {% if card_class %}{{ card_class }}{% endif %}">
+  {% if card_header %}
+  <div class="card-header {% if header_class %}{{ header_class }}{% endif %}">
+    <div class="d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center">
+        {% if card_icon %}
+        <i class="{{ card_icon }} me-2"></i>
+        {% endif %}
+        <h6 class="mb-0">{{ card_header }}</h6>
+      </div>
+      {% if card_actions %}
+      <div class="card-actions">
+        {{ card_actions }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+  
+  <div class="card-body {% if body_class %}{{ body_class }}{% endif %}">
+    {% if card_title %}
+    <h5 class="card-title">
+      {% if title_icon %}<i class="{{ title_icon }} me-2"></i>{% endif %}
+      {{ card_title }}
+    </h5>
+    {% endif %}
+    
+    {% if card_subtitle %}
+    <h6 class="card-subtitle mb-2 text-muted">{{ card_subtitle }}</h6>
+    {% endif %}
+    
+    {% if card_text %}
+    <p class="card-text">{{ card_text }}</p>
+    {% endif %}
+    
+    {% if card_content %}
+    <div class="card-content">
+      {{ card_content }}
+    </div>
+    {% endif %}
+    
+    {% if card_list %}
+    <ul class="list-unstyled mb-0">
+      {% for item in card_list %}
+      <li class="mb-1">
+        {% if item.icon %}<i class="{{ item.icon }} me-2 text-{{ item.color|default:'muted' }}"></i>{% endif %}
+        {% if item.label %}<strong>{{ item.label }}:</strong> {% endif %}
+        {{ item.value }}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    
+    {% if card_buttons %}
+    <div class="card-buttons mt-3">
+      {{ card_buttons }}
+    </div>
+    {% endif %}
+  </div>
+  
+  {% if card_footer %}
+  <div class="card-footer {% if footer_class %}{{ footer_class }}{% endif %}">
+    {{ card_footer }}
+  </div>
+  {% endif %}
+</div>

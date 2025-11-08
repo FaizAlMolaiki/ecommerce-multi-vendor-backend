@@ -1,0 +1,108 @@
+{% extends 'dashboard/layouts/delete_layout.html' %}
+
+{% block title %}حذف المستخدم - {{ object.email }} - لوحة التحكم{% endblock %}
+
+{% with page_title='حذف المستخدم' %}
+{% with back_url='/dashboard/users/' %}
+{% with delete_url='/dashboard/users/'|add:object.id|add:'/delete/' %}
+
+{% block delete_content %}
+    {% include 'dashboard/components/forms/delete_confirmation.html' with object=object object_name='المستخدم' object_display=object.email %}
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>البيانات المرتبطة
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-shopping-cart text-primary me-2"></i>
+                            <strong>الطلبات:</strong> {{ object.orders.count }} طلب
+                        </li>
+                        {% if object.is_vendor %}
+                        <li class="mb-2">
+                            <i class="fas fa-store text-success me-2"></i>
+                            <strong>المتاجر:</strong> {{ object.stores.count }} متجر
+                        </li>
+                        {% endif %}
+                        <li class="mb-2">
+                            <i class="fas fa-star text-warning me-2"></i>
+                            <strong>التقييمات:</strong> {{ object.reviews.count }} تقييم
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-heart text-danger me-2"></i>
+                            <strong>المفضلة:</strong> {{ object.wishlist_items.count }} عنصر
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>معلومات المستخدم
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>البريد الإلكتروني:</strong> {{ object.email }}</p>
+                    <p><strong>الاسم:</strong> 
+                        {{ object.name|default:"غير محدد" }}
+                    </p>
+                    <p><strong>تاريخ التسجيل:</strong> {{ object.created_at|date:"Y-m-d" }}</p>
+                    <p><strong>الأدوار:</strong>
+                        <div class="mt-1">
+                            {% if object.is_staff %}
+                                <span class="badge bg-danger me-1">موظف</span>
+                            {% endif %}
+                            {% if object.is_vendor %}
+                                <span class="badge bg-success me-1">بائع</span>
+                            {% endif %}
+                            {% if object.is_delivery %}
+                                <span class="badge bg-info me-1">مندوب</span>
+                            {% endif %}
+                            {% if not object.is_staff and not object.is_vendor and not object.is_delivery %}
+                                <span class="badge bg-secondary">عميل</span>
+                            {% endif %}
+                        </div>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if object.orders.count > 0 or object.stores.count > 0 or object.reviews.count > 0 %}
+    <div class="alert alert-danger mt-4">
+        <h6 class="alert-heading">
+            <i class="fas fa-exclamation-triangle me-2"></i>تحذير مهم
+        </h6>
+        <p class="mb-0">
+            حذف هذا المستخدم سيؤدي إلى حذف جميع البيانات المرتبطة به نهائياً، بما في ذلك:
+        </p>
+        <ul class="mt-2 mb-0">
+            {% if object.orders.count > 0 %}
+            <li>جميع الطلبات ({{ object.orders.count }}) والطلبات الفرعية المرتبطة بها</li>
+            {% endif %}
+            {% if object.stores.count > 0 %}
+            <li>جميع المتاجر ({{ object.stores.count }}) والمنتجات المرتبطة بها</li>
+            {% endif %}
+            {% if object.reviews.count > 0 %}
+            <li>جميع التقييمات ({{ object.reviews.count }}) التي كتبها</li>
+            {% endif %}
+            <li>جميع عناصر المفضلة والبيانات الشخصية</li>
+        </ul>
+        <p class="mt-2 mb-0">
+            <strong>هذا الإجراء لا يمكن التراجع عنه!</strong>
+        </p>
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}

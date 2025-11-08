@@ -1,0 +1,338 @@
+{% extends 'dashboard/base/base.html' %}
+{% load static %}
+
+{% block title %}الطلبات - لوحة التحكم{% endblock %}
+
+{% block content %}
+  {% include 'dashboard/includes/page_header.html' with page_title='إدارة الطلبات' page_subtitle='عرض وإدارة جميع الطلبات في النظام' page_icon='fas fa-shopping-cart' %}
+
+  <!-- تم حذف بطاقات الإحصائيات لأن الإحصائيات موجودة في الصفحة الرئيسية -->
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-filter text-primary me-2"></i>فلترة الطلبات
+        </h5>
+        <div class="d-flex gap-2">
+          <a class="btn btn-success" href="?export=1&payment_status={{ filters.payment_status }}&fulfillment_status={{ filters.fulfillment_status }}&user_email={{ filters.user_email }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
+            <i class="fas fa-download me-1"></i>تصدير CSV
+          </a>
+          <a href="{% url 'dashboard-order-create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>إضافة طلب جديد
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-lg-2 col-md-3 col-sm-6">
+          <label class="form-label fw-medium text-muted small">حالة الدفع</label>
+          <select class="form-select form-select-sm" name="payment_status">
+            <option value="">جميع الحالات</option>
+            {% for s in payment_status_choices %}
+            <option value="{{ s }}" {% if filters.payment_status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-lg-2 col-md-3 col-sm-6">
+          <label class="form-label fw-medium text-muted small">حالة التجهيز/التسليم</label>
+          <select class="form-select form-select-sm" name="fulfillment_status">
+            <option value="">جميع الحالات</option>
+            {% for s in fulfillment_status_choices %}
+            <option value="{{ s }}" {% if filters.fulfillment_status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6">
+          <label class="form-label fw-medium text-muted small">بريد المستخدم</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+            <input class="form-control" type="email" name="user_email" value="{{ filters.user_email }}" placeholder="البحث بالبريد الإلكتروني">
+          </div>
+        </div>
+        <div class="col-lg-2 col-md-3 col-sm-6">
+          <label class="form-label fw-medium text-muted small">من تاريخ</label>
+          <input class="form-control form-control-sm" type="date" name="start_date" value="{{ filters.start_date }}">
+        </div>
+        <div class="col-lg-2 col-md-3 col-sm-6">
+          <label class="form-label fw-medium text-muted small">إلى تاريخ</label>
+          <input class="form-control form-control-sm" type="date" name="end_date" value="{{ filters.end_date }}">
+        </div>
+        <div class="col-lg-2 col-md-3 col-sm-6">
+          <label class="form-label fw-medium text-muted small">المبلغ</label>
+          <select class="form-select form-select-sm" name="amount_range">
+            <option value="">جميع المبالغ</option>
+            <option value="0-100" {% if filters.amount_range == '0-100' %}selected{% endif %}>أقل من 100</option>
+            <option value="100-500" {% if filters.amount_range == '100-500' %}selected{% endif %}>100 - 500</option>
+            <option value="500-1000" {% if filters.amount_range == '500-1000' %}selected{% endif %}>500 - 1000</option>
+            <option value="1000+" {% if filters.amount_range == '1000+' %}selected{% endif %}>أكثر من 1000</option>
+          </select>
+        </div>
+        <div class="col-lg-1 col-md-2 col-sm-6">
+          <button class="btn btn-primary btn-sm w-100" type="submit">
+            <i class="fas fa-search me-1"></i>بحث
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Orders Table -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-0 pb-0">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-list text-primary me-2"></i>قائمة الطلبات
+        </h5>
+        <span class="badge bg-primary bg-opacity-10 text-primary">{{ page_obj.paginator.count }} طلب</span>
+      </div>
+    </div>
+    <div class="card-body pt-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="border-0"><i class="fas fa-hashtag me-1"></i>المعرف</th>
+              <th class="border-0"><i class="fas fa-store me-1"></i>المتجر</th>
+              <th class="border-0"><i class="fas fa-user me-1"></i>العميل</th>
+              <th class="border-0"><i class="fas fa-shopping-bag me-1"></i>العناصر</th>
+              <th class="border-0"><i class="fas fa-money-bill me-1"></i>المبلغ الإجمالي</th>
+              <th class="border-0"><i class="fas fa-info-circle me-1"></i>الحالة</th>
+              <th class="border-0"><i class="fas fa-clock me-1"></i>تاريخ الإنشاء</th>
+              <th class="border-0 text-center"><i class="fas fa-cog me-1"></i>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in page_obj %}
+            <tr data-order-id="{{ item.id }}">
+              <td>
+                <span class="fw-bold text-primary">#{{ item.id }}</span>
+              </td>
+              <td>
+                <div class="d-flex align-items-center">
+                  <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                    <i class="fas fa-store text-info"></i>
+                  </div>
+                  <div>
+                    {{ item.store.name|default:'—' }}
+                  </div>
+                </div>
+              </td>
+              <td>
+                {% if item.user %}
+                  <div class="d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                      <i class="fas fa-user text-primary"></i>
+                    </div>
+                    <div>
+                      <a href="{% url 'dashboard-user-detail' item.user.id %}" class="text-decoration-none fw-medium">
+                        {{ item.user.email|truncatechars:25 }}
+                      </a>
+                      <br><small class="text-muted">عميل مسجل</small>
+                    </div>
+                  </div>
+                {% else %}
+                  <div class="d-flex align-items-center">
+                    <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                      <i class="fas fa-user-times text-secondary"></i>
+                    </div>
+                    <div>
+                      <span class="text-muted fw-medium">ضيف</span>
+                      <br><small class="text-muted">غير مسجل</small>
+                    </div>
+                  </div>
+                {% endif %}
+              </td>
+              <td>
+                <div class="d-flex align-items-center">
+                  <span class="badge bg-info bg-opacity-10 text-info border border-info me-2">
+                    <i class="fas fa-boxes-stacked me-1"></i>{{ item.items_count|default:0 }}
+                  </span>
+                  <small class="text-muted">عنصر</small>
+                </div>
+              </td>
+              <td>
+                <div class="text-end">
+                  <span class="fw-bold text-success fs-6">{{ item.grand_total|floatformat:2 }}</span>
+                  <small class="text-muted d-block">ر.س</small>
+                </div>
+              </td>
+              <td>
+                <div class="d-flex flex-column gap-1">
+                  {# Payment status badge #}
+                  {% if item.payment_status == 'PENDING_PAYMENT' %}
+                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning"><i class="fas fa-clock me-1"></i>في انتظار الدفع</span>
+                  {% elif item.payment_status == 'PAID' %}
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fas fa-check me-1"></i>مدفوع</span>
+                  {% elif item.payment_status == 'CANCELLED' %}
+                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger"><i class="fas fa-times me-1"></i>ملغي (دفع)</span>
+                  {% elif item.payment_status == 'REFUNDED' %}
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary"><i class="fas fa-undo me-1"></i>مسترجع</span>
+                  {% endif %}
+                  {# Fulfillment status badge #}
+                  {% if item.fulfillment_status == 'PENDING' %}
+                    <span class="badge bg-info bg-opacity-10 text-info border border-info"><i class="fas fa-hourglass-half me-1"></i>قيد المراجعة</span>
+                  {% elif item.fulfillment_status == 'ACCEPTED' %}
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary"><i class="fas fa-clipboard-check me-1"></i>تم القبول</span>
+                  {% elif item.fulfillment_status == 'PREPARING' %}
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary"><i class="fas fa-tools me-1"></i>قيد التجهيز</span>
+                  {% elif item.fulfillment_status == 'SHIPPED' %}
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary"><i class="fas fa-truck me-1"></i>تم الشحن</span>
+                  {% elif item.fulfillment_status == 'DELIVERED' %}
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fas fa-box-open me-1"></i>تم التوصيل</span>
+                  {% elif item.fulfillment_status == 'REJECTED' %}
+                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger"><i class="fas fa-ban me-1"></i>مرفوض</span>
+                  {% endif %}
+                </div>
+              </td>
+              <td>
+                <div class="text-nowrap">
+                  <div class="fw-medium small">{{ item.created_at|date:"d M Y" }}</div>
+                  <small class="text-muted">{{ item.created_at|date:"H:i" }}</small>
+                </div>
+              </td>
+              <td class="text-center">
+                <div class="btn-group btn-group-sm" role="group">
+                  <a href="{% url 'dashboard-order-detail' order_id=item.id %}" class="btn btn-outline-primary" title="عرض التفاصيل">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  <a href="{% url 'dashboard-order-edit' order_id=item.id %}" class="btn btn-outline-warning" title="تعديل الطلب">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="{% url 'dashboard-order-delete' order_id=item.id %}" class="btn btn-outline-danger" title="حذف الطلب">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-5">
+                <i class="fas fa-shopping-cart fa-3x mb-3 d-block opacity-50"></i>
+                <h6>لا توجد طلبات</h6>
+                <p class="small mb-0">لم يتم العثور على أي طلبات تطابق معايير البحث</p>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Pagination -->
+      {% if page_obj.paginator.num_pages > 1 %}
+      <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+        <small class="text-muted">
+          عرض {{ page_obj.start_index }}-{{ page_obj.end_index }} من {{ page_obj.paginator.count }} طلب
+        </small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">
+                <i class="fas fa-chevron-right"></i>
+              </a>
+            </li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+                <li class="page-item active">
+                  <span class="page-link">{{ num }}</span>
+                </li>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">{{ num }}</a>
+                </li>
+              {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">
+                <i class="fas fa-chevron-left"></i>
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_head %}{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add smooth animations to cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(15px)';
+        card.style.transition = `all 0.3s ease ${index * 0.05}s`;
+        
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, 50);
+    });
+    
+    // Add hover effects to table rows
+    const tableRows = document.querySelectorAll('tbody tr');
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+            this.style.transition = 'box-shadow 0.15s ease';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.boxShadow = 'none';
+        });
+    });
+    
+    // Auto-submit form on filter change
+    const filterSelects = document.querySelectorAll('select[name="payment_status"], select[name="fulfillment_status"], select[name="amount_range"]');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            // Add loading indicator
+            const submitBtn = this.form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري البحث...';
+                submitBtn.disabled = true;
+            }
+            this.form.submit();
+        });
+    });
+    
+    // Add clear filters functionality
+    const form = document.querySelector('form[method="get"]');
+    if (form) {
+        const clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'btn btn-outline-secondary btn-sm';
+        clearBtn.innerHTML = '<i class="fas fa-times me-1"></i>مسح الفلاتر';
+        clearBtn.addEventListener('click', function() {
+            form.reset();
+            window.location.href = window.location.pathname;
+        });
+        
+        const submitBtnContainer = form.querySelector('.col-lg-1');
+        if (submitBtnContainer) {
+            submitBtnContainer.classList.remove('col-lg-1');
+            submitBtnContainer.classList.add('col-lg-2');
+            submitBtnContainer.innerHTML = `
+                <div class="d-flex gap-1">
+                    ${submitBtnContainer.innerHTML}
+                    ${clearBtn.outerHTML}
+                </div>
+            `;
+        }
+    }
+});
+</script>
+<script src="{% static 'js/orders.js' %}"></script>
+{% endblock %}

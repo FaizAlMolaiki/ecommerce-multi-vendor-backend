@@ -1,0 +1,10 @@
+{% comment %}
+مكون تنبيه النجاح
+الاستخدام: {% include 'dashboard/components/alerts/success_alert.html' with message='تم الحفظ بنجاح' %}
+{% endcomment %}
+
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="fas fa-check-circle me-2"></i>
+    {{ message|default:'تمت العملية بنجاح' }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
+</div>

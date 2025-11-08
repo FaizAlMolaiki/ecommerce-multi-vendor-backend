@@ -1,0 +1,316 @@
+{% extends 'dashboard/base/base.html' %}
+{% load static %}
+
+{% block title %}
+{% if order %}تعديل الطلب - #{{ order.id }}{% else %}إضافة طلب جديد{% endif %} - لوحة التحكم
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="{% static 'js/orders.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+  {% if order %}
+    {% include 'dashboard/includes/page_header.html' with page_title='تعديل الطلب' page_subtitle='تعديل بيانات الطلب #'|add:order.id page_icon='fas fa-edit' %}
+  {% else %}
+    {% include 'dashboard/includes/page_header.html' with page_title='إضافة طلب جديد' page_subtitle='إنشاء طلب جديد في النظام' page_icon='fas fa-plus' %}
+  {% endif %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-0">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-shopping-cart text-primary me-2"></i>بيانات الطلب
+        </h5>
+        <a href="{% url 'dashboard-orders' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-right me-2"></i>العودة للقائمة
+        </a>
+      </div>
+    </div>
+    <div class="card-body">
+      <form method="post" id="order-form" class="needs-validation" novalidate>
+        {% csrf_token %}
+        
+        <!-- معلومات الطلب الأساسية -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h6 class="mb-0"><i class="fas fa-user me-2"></i>معلومات العميل والطلب</h6>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.store.id_for_label }}" class="form-label fw-medium">
+                  المتجر <span class="text-danger">*</span>
+                </label>
+                {{ form.store }}
+                {% if form.store.errors %}
+                  <div class="invalid-feedback d-block">{{ form.store.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.user.id_for_label }}" class="form-label fw-medium">
+                  المستخدم <span class="text-danger">*</span>
+                </label>
+                {{ form.user }}
+                {% if form.user.errors %}
+                  <div class="invalid-feedback d-block">{{ form.user.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.delivery_agent.id_for_label }}" class="form-label fw-medium">
+                  مندوب التوصيل (اختياري)
+                </label>
+                {{ form.delivery_agent }}
+                {% if form.delivery_agent.errors %}
+                  <div class="invalid-feedback d-block">{{ form.delivery_agent.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.payment_status.id_for_label }}" class="form-label fw-medium">
+                  حالة الدفع <span class="text-danger">*</span>
+                </label>
+                {{ form.payment_status }}
+                {% if form.payment_status.errors %}
+                  <div class="invalid-feedback d-block">{{ form.payment_status.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.fulfillment_status.id_for_label }}" class="form-label fw-medium">
+                  حالة التجهيز/التسليم <span class="text-danger">*</span>
+                </label>
+                {{ form.fulfillment_status }}
+                {% if form.fulfillment_status.errors %}
+                  <div class="invalid-feedback d-block">{{ form.fulfillment_status.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- عنوان الشحن -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>عنوان الشحن</h6>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-medium">الاسم الكامل</label>
+                <input type="text" class="form-control" id="shipping_name" placeholder="اسم المستلم">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-medium">رقم الهاتف</label>
+                <input type="tel" class="form-control" id="shipping_phone" placeholder="05xxxxxxxx">
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-medium">المدينة</label>
+                <input type="text" class="form-control" id="shipping_city" placeholder="الرياض">
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-medium">الحي</label>
+                <input type="text" class="form-control" id="shipping_district" placeholder="العليا">
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-medium">الرمز البريدي</label>
+                <input type="text" class="form-control" id="shipping_postal" placeholder="12345">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-medium">العنوان التفصيلي</label>
+              <textarea class="form-control" id="shipping_address" rows="2" placeholder="الشارع، رقم المبنى، تفاصيل إضافية..."></textarea>
+            </div>
+            <!-- الحقل المخفي للـ JSON -->
+            {{ form.shipping_address_snapshot }}
+            {% if form.shipping_address_snapshot.errors %}
+              <div class="invalid-feedback d-block">{{ form.shipping_address_snapshot.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- اختيار المنتجات -->
+        {% if not order %}
+        <div class="card mb-4">
+          <div class="card-header">
+            <h6 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>إضافة منتجات للطلب</h6>
+          </div>
+          <div class="card-body">
+            <div id="store_mismatch_alert" class="alert alert-warning d-none" role="alert">
+              <i class="fas fa-exclamation-triangle me-1"></i>
+              تنبيه: المتجر المختار لإضافة المنتجات لا يطابق المتجر المحدد في بيانات الطلب بالأعلى. يرجى توحيد الاختيار قبل إضافة المنتجات.
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-medium">اختر المتجر</label>
+                <select class="form-select" id="store_select">
+                  <option value="">-- اختر المتجر --</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-medium">اختر المنتج</label>
+                <select class="form-select" id="product_select" disabled>
+                  <option value="">-- اختر المنتج أولاً --</option>
+                </select>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label fw-medium">المتغير</label>
+                <select class="form-select" id="variant_select" disabled>
+                  <option value="">-- اختر المتغير --</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-medium">الكمية</label>
+                <input type="number" class="form-control" id="quantity_input" min="1" value="1" disabled>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-medium">السعر</label>
+                <input type="text" class="form-control" id="price_display" readonly placeholder="0.00 ر.س">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label fw-medium">&nbsp;</label>
+                <button type="button" class="btn btn-primary w-100" id="add_product_btn" disabled>
+                  <i class="fas fa-plus"></i> إضافة
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- قائمة المنتجات المختارة -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><i class="fas fa-list me-2"></i>المنتجات المختارة</h6>
+              <span class="badge bg-primary" id="total_items">0 عنصر</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="selected_products_container">
+              <div class="text-center text-muted py-4">
+                <i class="fas fa-shopping-cart fa-2x mb-2 d-block opacity-50"></i>
+                <p>لم يتم اختيار أي منتجات بعد</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- الإجمالي والملاحظات -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h6 class="mb-0"><i class="fas fa-calculator me-2"></i>الإجمالي والملاحظات</h6>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.grand_total.id_for_label }}" class="form-label fw-medium">
+                  المبلغ الإجمالي <span class="text-danger">*</span>
+                </label>
+                {{ form.grand_total }}
+                {% if form.grand_total.errors %}
+                  <div class="invalid-feedback d-block">{{ form.grand_total.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.delivery_fee.id_for_label }}" class="form-label fw-medium">
+                  رسوم التوصيل
+                </label>
+                {{ form.delivery_fee }}
+                {% if form.delivery_fee.errors %}
+                  <div class="invalid-feedback d-block">{{ form.delivery_fee.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-medium">كود الكوبون</label>
+                <input type="text" name="coupon_code" class="form-control" placeholder="مثال: WELCOME10" />
+                <small class="text-muted">إذا كان الخصم يتطلب كوبوناً، أدخله هنا لتطبيقه.</small>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-medium">طريقة الدفع</label>
+                <select class="form-select" name="payment_method">
+                  <option value="cash">نقداً عند التسليم</option>
+                  <option value="card">بطاقة ائتمان</option>
+                  <option value="wallet">محفظة إلكترونية</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-medium">ملاحظات إضافية</label>
+              <textarea class="form-control" name="notes" rows="3" placeholder="أي ملاحظات خاصة بالطلب..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- حقل مخفي للمنتجات المختارة -->
+        <input type="hidden" name="selected_products" id="selected_products_json" value="[]">
+            
+            {# لم يعد هناك طلبات فرعية بعد التوحيد #}
+          </div>
+          
+          <div class="col-md-4">
+            <div class="card">
+              <div class="card-header">
+                <h6 class="mb-0">معلومات الطلب</h6>
+              </div>
+              <div class="card-body">
+                {% if order %}
+                <p><small><strong>رقم الطلب:</strong><br>#{{ order.id }}</small></p>
+                <p><small><strong>تاريخ الإنشاء:</strong><br>{{ order.created_at|date:"Y-m-d H:i" }}</small></p>
+                <p><small><strong>المتجر:</strong> {{ order.store.name|default:'—' }}</small></p>
+                <p><small><strong>إجمالي العناصر:</strong> {{ order.items.count }}</small></p>
+                {% else %}
+                <p class="text-muted">سيتم عرض معلومات الطلب بعد الحفظ.</p>
+                {% endif %}
+              </div>
+            </div>
+            
+            {% if order %}
+            <div class="card mt-3">
+              <div class="card-header">
+                <h6 class="mb-0">إجراءات سريعة</h6>
+              </div>
+              <div class="card-body">
+                <div class="d-grid gap-2">
+                  <a href="{% url 'dashboard-order-status' order_id=order.id %}" class="btn btn-outline-warning btn-sm">
+                    <i class="fas fa-edit me-1"></i>تغيير الحالة
+                  </a>
+                  {% if order.user %}
+                  <a href="{% url 'dashboard-user-detail' order.user.id %}" class="btn btn-outline-info btn-sm">
+                    <i class="fas fa-user me-1"></i>عرض المستخدم
+                  </a>
+                  {% endif %}
+                  <a href="{% url 'dashboard-order-detail' order_id=order.id %}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-eye me-1"></i>عرض التفاصيل
+                  </a>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="alert alert-info mt-3">
+          <i class="fas fa-info-circle me-2"></i>
+          <strong>ملاحظة:</strong> 
+          {% if order %}
+            تعديل بيانات الطلب الأساسية قد يؤثر على العناصر المرتبطة.
+          {% else %}
+            بعد إنشاء الطلب، يمكنك إضافة عناصر الطلب من صفحة التفاصيل.
+          {% endif %}
+        </div>
+        
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{% url 'dashboard-orders' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-times me-2"></i>إلغاء
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-2"></i>حفظ الطلب
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

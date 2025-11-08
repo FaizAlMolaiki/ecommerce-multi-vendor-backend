@@ -1,0 +1,10 @@
+{% extends 'dashboard/layouts/form_layout.html' %}
+{% load static %}
+
+{% block content %}
+{{ block.super }}
+{% endblock %}
+
+{% block form_buttons %}
+{% include 'dashboard/components/forms/form_buttons.html' with submit_text='حفظ' cancel_url=cancel_url %}
+{% endblock %}

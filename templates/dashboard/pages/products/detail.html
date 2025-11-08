@@ -1,0 +1,241 @@
+{% extends 'dashboard/layouts/detail_layout.html' %}
+
+{% block title %}تفاصيل المنتج - {{ object.name }} - لوحة التحكم{% endblock %}
+
+{% with page_title='تفاصيل المنتج - '|add:object.name %}
+{% with back_url='/dashboard/products/' %}
+{% with edit_url='/dashboard/products/'|add:object.id|add:'/edit/' %}
+{% with delete_url='/dashboard/products/'|add:object.id|add:'/delete/' %}
+
+{% block detail_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="d-flex align-items-start mb-4">
+            {% if object.cover_image_url %}
+            <img src="{{ object.cover_image_url }}" alt="{{ object.name }}" class="rounded me-3" style="width: 120px; height: 120px; object-fit: cover;">
+            {% elif object.images.first %}
+            <img src="{{ object.images.first.image_url }}" alt="{{ object.name }}" class="rounded me-3" style="width: 120px; height: 120px; object-fit: cover;">
+            {% endif %}
+            <div class="flex-grow-1">
+                <h3 class="mb-2">{{ object.name }}</h3>
+                <div class="mb-2">
+                    <span class="badge bg-info me-2">{{ object.store.name }}</span>
+                    {% if object.category %}
+                    <span class="badge bg-secondary me-2">{{ object.category.name }}</span>
+                    {% endif %}
+                </div>
+                {% if object.variants.first %}
+                <div class="d-flex align-items-center mb-2">
+                    <h4 class="text-success mb-0 me-3">{{ object.variants.first.price }} ريال</h4>
+                    <small class="text-muted">(سعر أول متغير)</small>
+                </div>
+                {% endif %}
+                <div class="d-flex align-items-center">
+                    <span class="me-2">{{ object.average_rating|floatformat:1 }}</span>
+                    <div class="text-warning me-2">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= object.average_rating %}
+                                <i class="fas fa-star"></i>
+                            {% else %}
+                                <i class="far fa-star"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <small class="text-muted">({{ object.review_count }} تقييم)</small>
+                </div>
+            </div>
+        </div>
+        
+        {% if object.description %}
+        <div class="mb-4">
+            <h6 class="text-muted">وصف المنتج</h6>
+            <p>{{ object.description }}</p>
+        </div>
+        {% endif %}
+        
+        {% if object.specifications %}
+        <div class="mb-4">
+            <h6 class="text-muted">المواصفات</h6>
+            <div class="border rounded p-3 bg-light">
+                <pre>{{ object.specifications|safe }}</pre>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-muted mb-3">معلومات المنتج</h6>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>عدد المبيعات:</strong></td>
+                        <td>{{ object.selling_count }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>تاريخ الإنشاء:</strong></td>
+                        <td>{{ object.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>آخر تحديث:</strong></td>
+                        <td>{{ object.updated_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="col-md-6">
+                <h6 class="text-muted mb-3">معلومات إضافية</h6>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>صورة الغلاف:</strong></td>
+                        <td>
+                            {% if object.cover_image_url %}
+                                <span class="badge bg-success">متوفرة</span>
+                            {% else %}
+                                <span class="badge bg-secondary">غير متوفرة</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>المواصفات:</strong></td>
+                        <td>
+                            {% if object.specifications %}
+                                <span class="badge bg-info">{{ object.specifications|length }} مواصفة</span>
+                            {% else %}
+                                <span class="badge bg-secondary">لا توجد</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">إحصائيات المنتج</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 border-end">
+                        <h4 class="text-success mb-0">{{ object.variants.count }}</h4>
+                        <small class="text-muted">متغير</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-info mb-0">{{ object.images.count }}</h4>
+                        <small class="text-muted">صورة</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6 border-end">
+                        <h4 class="text-warning mb-0">{{ object.review_count }}</h4>
+                        <small class="text-muted">تقييم</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-danger mb-0">{{ object.selling_count }}</h4>
+                        <small class="text-muted">مبيعة</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr>
+
+<div class="row">
+    <div class="col-md-6">
+        <h6 class="text-muted mb-3">صور المنتج</h6>
+        {% if object.images.all %}
+            <div class="row">
+                {% for image in object.images.all %}
+                <div class="col-md-4 mb-3">
+                    <img src="{{ image.image_url }}" alt="{{ object.name }}" class="img-fluid rounded" style="height: 100px; width: 100%; object-fit: cover;">
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted">لا توجد صور لهذا المنتج</p>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-6">
+        <h6 class="text-muted mb-3">متغيرات المنتج</h6>
+        {% if object.variants.all %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>السعر</th>
+                            <th>الكود</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for variant in object.variants.all %}
+                        <tr>
+                            <td>
+                                {% if variant.options %}
+                                    {% for key, value in variant.options.items %}
+                                        {{ key }}: {{ value }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    متغير {{ forloop.counter }}
+                                {% endif %}
+                            </td>
+                            <td>{{ variant.price }} ريال</td>
+                            <td>
+                                {% if variant.sku %}
+                                    <small class="text-muted">{{ variant.sku }}</small>
+                                {% else %}
+                                    <small class="text-muted">بدون كود</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">لا توجد متغيرات لهذا المنتج</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block sidebar_content %}
+<div class="card mb-3">
+    <div class="card-header bg-success text-white">
+        <h6 class="mb-0">إجراءات سريعة</h6>
+    </div>
+    <div class="card-body">
+        <div class="d-grid gap-2">
+            <a href="/dashboard/products/" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-list me-1"></i>جميع المنتجات
+            </a>
+            <a href="/dashboard/products/{{ object.id }}/edit/" class="btn btn-outline-warning btn-sm">
+                <i class="fas fa-edit me-1"></i>تعديل المنتج
+            </a>
+            <a href="/dashboard/orders/" class="btn btn-outline-info btn-sm">
+                <i class="fas fa-shopping-cart me-1"></i>جميع الطلبات
+            </a>
+            <a href="/dashboard/reviews/" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-star me-1"></i>جميع التقييمات
+            </a>
+            <form method="post" class="mt-1">
+                {% csrf_token %}
+                <button type="submit" name="action" value="activate" class="btn btn-outline-success btn-sm w-100">
+                    <i class="fas fa-toggle-on me-1"></i>تبديل الحالة
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{ block.super }}
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}

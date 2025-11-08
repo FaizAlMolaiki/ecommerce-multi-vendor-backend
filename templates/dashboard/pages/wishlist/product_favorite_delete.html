@@ -1,0 +1,17 @@
+{% extends "dashboard/layouts/delete_layout.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard-wishlist' %}">المفضلة</a></li>
+<li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+{% endblock %}
+
+{% block object_info %}
+<p>أنت على وشك حذف المنتج <strong>{{ favorite.product.name }}</strong> من مفضلة المستخدم <strong>{{ favorite.user.email }}</strong>.</p>
+<p>هذا الإجراء لا يمكن التراجع عنه.</p>
+{% endblock %}
+
+{% block related_data_warning %}
+<!-- No related data to warn about for a favorite item -->
+{% endblock %}

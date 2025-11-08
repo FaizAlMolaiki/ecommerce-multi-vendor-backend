@@ -1,0 +1,91 @@
+{% load static %}
+
+<div class="page-header mb-4">
+  <div class="row align-items-center">
+    <div class="col">
+      {% if page_icon or page_title %}
+      <div class="d-flex align-items-center mb-2">
+        {% if page_icon %}
+        <div class="page-icon me-3">
+          <i class="{{ page_icon }} text-primary fs-2"></i>
+        </div>
+        {% endif %}
+        <div>
+          {% if page_title %}
+          <h1 class="page-title mb-0">{{ page_title }}</h1>
+          {% endif %}
+          {% if page_subtitle %}
+          <p class="page-subtitle text-muted mb-0">{{ page_subtitle }}</p>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+      
+      {% if show_breadcrumb %}
+        {% include 'dashboard/includes/breadcrumb.html' %}
+      {% endif %}
+    </div>
+    
+    {% if page_actions %}
+    <div class="col-auto">
+      <div class="page-actions">
+        {{ page_actions }}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  
+  {% if page_stats %}
+  <div class="row mt-3">
+    {% for stat in page_stats %}
+    <div class="col-md-3 mb-2">
+      <div class="stat-card bg-white border rounded p-3 text-center">
+        {% if stat.icon %}
+        <i class="{{ stat.icon }} text-{{ stat.color|default:'primary' }} fs-4 mb-2"></i>
+        {% endif %}
+        <div class="stat-value fs-4 fw-bold text-{{ stat.color|default:'primary' }}">{{ stat.value }}</div>
+        <div class="stat-label text-muted small">{{ stat.label }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.page-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid #dee2e6;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.page-subtitle {
+  font-size: 1rem;
+  margin-top: 0.25rem;
+}
+
+.stat-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.page-actions .btn {
+  margin-left: 0.5rem;
+}
+
+.page-actions .btn:first-child {
+  margin-left: 0;
+}
+</style>

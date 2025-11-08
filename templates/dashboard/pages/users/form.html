@@ -1,0 +1,164 @@
+{% extends 'dashboard/layouts/form_layout.html' %}
+
+{% block title %}
+{% if object %}تعديل المستخدم - {{ object.email }}{% else %}إضافة مستخدم جديد{% endif %} - لوحة التحكم
+{% endblock %}
+
+{% with page_title=object.email|default:'إضافة مستخدم جديد' %}
+{% with form_title='بيانات المستخدم' %}
+{% with form_icon='user' %}
+{% with back_url='/dashboard/users/' %}
+{% with submit_text='حفظ المستخدم' %}
+
+{% block form_content %}
+<div class="row">
+    <div class="col-md-8">
+        {% include 'dashboard/components/forms/form_field.html' with field=form.name label='الاسم الكامل' %}
+        {% include 'dashboard/components/forms/form_field.html' with field=form.email label='البريد الإلكتروني' required=True %}
+        {% include 'dashboard/components/forms/form_field.html' with field=form.phone_number label='رقم الهاتف' %}
+        
+        {% if not object %}
+        <div class="row">
+            <div class="col-md-6">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.password1 label='كلمة المرور' required=True %}
+            </div>
+
+        <!-- Staff Data Card (hidden by default) -->
+        <div id="staff-card" class="card mt-3 d-none">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-id-badge me-2"></i>بيانات الموظف</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="staff_job_title" class="form-label">المسمى الوظيفي</label>
+                    <input type="text" id="staff_job_title" name="staff_job_title" class="form-control" placeholder="مثال: مدير عمليات/دعم" />
+                    <div class="form-text">هذا الحقل يستخدم فقط إذا كان المستخدم موظفاً.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="staff_id_card_image" class="form-label">صورة البطاقة</label>
+                    <input type="file" id="staff_id_card_image" name="staff_id_card_image" class="form-control" accept="image/*" />
+                    <div class="form-text">ارفع صورة واضحة لبطاقة الموظف (اختياري حالياً).</div>
+                </div>
+                <div class="mb-0">
+                    <label for="staff_resume_cv" class="form-label">السيرة الذاتية</label>
+                    <input type="file" id="staff_resume_cv" name="staff_resume_cv" class="form-control" />
+                    <div class="form-text">ارفع السيرة الذاتية بصيغة PDF/Doc (اختياري حالياً).</div>
+                </div>
+            </div>
+            <div class="card-footer small text-muted">
+                لن يتم حفظ هذه البيانات بدون دعم من المعالجة الخلفية. وقد تم تفعيل الحفظ الآن في الخلفية عندما يتم تفعيل دور الموظف.
+            </div>
+        </div>
+            <div class="col-md-6">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.password2 label='تأكيد كلمة المرور' required=True %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">الأدوار والصلاحيات</h6>
+            </div>
+            <div class="card-body">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.is_active checkbox_label='حساب مفعل' %}
+                {% include 'dashboard/components/forms/form_field.html' with field=form.is_verified checkbox_label='حساب محقق' %}
+                {% include 'dashboard/components/forms/form_field.html' with field=form.is_staff checkbox_label='موظف (صلاحيات إدارية)' %}
+                {% include 'dashboard/components/forms/form_field.html' with field=form.is_vendor checkbox_label='بائع (يمكنه إدارة متجر)' %}
+                {% include 'dashboard/components/forms/form_field.html' with field=form.is_delivery checkbox_label='مندوب توصيل' %}
+            </div>
+        </div>
+
+        <!-- Delivery Data Card (hidden by default) -->
+        <div id="delivery-card" class="card mt-3 d-none">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-motorcycle me-2"></i>بيانات المندوب</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="delivery_vehicle_type" class="form-label">نوع المركبة</label>
+                    <input type="text" id="delivery_vehicle_type" name="delivery_vehicle_type" class="form-control" placeholder="مثال: دراجة/سكوتر/سيارة" />
+                    <div class="form-text">هذا الحقل يستخدم فقط إذا كان المستخدم مندوب توصيل.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="delivery_id_card_image" class="form-label">صورة البطاقة</label>
+                    <input type="file" id="delivery_id_card_image" name="delivery_id_card_image" class="form-control" accept="image/*" />
+                    <div class="form-text">ارفع صورة واضحة للبطاقة الشخصية (اختياري حالياً).</div>
+                </div>
+                <div class="mb-0">
+                    <label for="delivery_driver_license_image" class="form-label">صورة رخصة القيادة</label>
+                    <input type="file" id="delivery_driver_license_image" name="delivery_driver_license_image" class="form-control" accept="image/*" />
+                    <div class="form-text">ارفع صورة رخصة القيادة (اختياري حالياً).</div>
+                </div>
+            </div>
+            <div class="card-footer small text-muted">
+                لن يتم حفظ هذه البيانات بدون دعم من المعالجة الخلفية. سنفعّل الحفظ لاحقاً إذا رغبت.
+            </div>
+        </div>
+        
+        {% if object %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">معلومات إضافية</h6>
+            </div>
+            <div class="card-body">
+                <p><small><strong>تاريخ التسجيل:</strong><br>{{ object.created_at|date:"Y-m-d H:i" }}</small></p>
+                {% if object.last_login %}
+                <p><small><strong>آخر دخول:</strong><br>{{ object.last_login|date:"Y-m-d H:i" }}</small></p>
+                {% endif %}
+                <p><small><strong>عدد الطلبات:</strong> {{ object.orders.count }}</small></p>
+                {% if object.is_vendor %}
+                <p><small><strong>عدد المتاجر:</strong> {{ object.stores.count }}</small></p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">إجراءات سريعة</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/dashboard/users/{{ object.id }}/reset-password/" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-key me-1"></i>إعادة تعيين كلمة المرور
+                    </a>
+                    {% if object.orders.count > 0 %}
+                    <a href="/dashboard/orders/?user_email={{ object.email }}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-shopping-cart me-1"></i>عرض الطلبات
+                    </a>
+                    {% endif %}
+                    {% if object.is_vendor and object.stores.count > 0 %}
+                    <a href="/dashboard/stores/?owner={{ object.id }}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-store me-1"></i>عرض المتاجر
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="alert alert-info mt-3">
+    <i class="fas fa-info-circle me-2"></i>
+    <strong>ملاحظة:</strong> 
+    {% if object %}
+        لتغيير كلمة المرور، استخدم رابط "إعادة تعيين كلمة المرور" من الإجراءات السريعة.
+    {% else %}
+        تأكد من إدخال كلمة مرور قوية تحتوي على أحرف وأرقام ورموز.
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+    {{ block.super }}
+    {% load static %}
+    <script src="{% static 'js/users.js' %}"></script>
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}

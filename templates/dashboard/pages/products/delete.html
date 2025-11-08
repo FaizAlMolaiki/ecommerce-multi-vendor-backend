@@ -1,0 +1,47 @@
+{% extends 'dashboard/layouts/delete_layout.html' %}
+
+{% block title %}حذف المنتج - {{ object.name }} - لوحة التحكم{% endblock %}
+
+{% with page_title='حذف المنتج - '|add:object.name %}
+{% with item_type='المنتج' %}
+{% with back_url='/dashboard/products/' %}
+{% with cancel_url='/dashboard/products/' %}
+
+{% block additional_content %}
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h6 class="text-muted">تفاصيل المنتج:</h6>
+        <div class="d-flex align-items-center mb-2">
+            {% if object.cover_image_url %}
+            <img src="{{ object.cover_image_url }}" alt="{{ object.name }}" class="rounded me-2" style="width: 48px; height: 48px; object-fit: cover;">
+            {% elif object.images.first %}
+            <img src="{{ object.images.first.image_url }}" alt="{{ object.name }}" class="rounded me-2" style="width: 48px; height: 48px; object-fit: cover;">
+            {% endif %}
+            <div>
+                <p class="mb-0"><strong>{{ object.name }}</strong></p>
+                <small class="text-muted">{{ object.store.name }}</small>
+            </div>
+        </div>
+        {% if object.variants.first %}
+        <p><strong>السعر:</strong> {{ object.variants.first.price }} ريال (أول متغير)</p>
+        {% endif %}
+        <p><strong>التقييم:</strong> {{ object.average_rating|floatformat:1 }}/5</p>
+        <p><strong>المبيعات:</strong> {{ object.selling_count }}</p>
+    </div>
+    <div class="col-md-6">
+        <h6 class="text-warning">البيانات المرتبطة:</h6>
+        <ul class="list-unstyled">
+            <li><span class="badge bg-info">{{ object.variants.count }}</span> متغير</li>
+            <li><span class="badge bg-info">{{ object.images.count }}</span> صورة</li>
+            <li><span class="badge bg-info">{{ object.review_count }}</span> تقييم</li>
+            <li><span class="badge bg-warning">{{ variant_count }}</span> متغير سيُحذف</li>
+            <li><span class="badge bg-warning">{{ image_count }}</span> صورة ستُحذف</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}

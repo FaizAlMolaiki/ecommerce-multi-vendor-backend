@@ -1,0 +1,211 @@
+{% extends 'dashboard/layouts/form_layout.html' %}
+{% load static %}
+
+{% block title %}
+{% if object %}تعديل المنتج - {{ object.name }}{% else %}إضافة منتج جديد{% endif %} - لوحة التحكم
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/products.js' %}"></script>
+{% endblock %}
+
+{% with page_title=object.name|default:'إضافة منتج جديد' %}
+{% with form_title='بيانات المنتج' %}
+{% with form_icon='box' %}
+{% with back_url='/dashboard/products/' %}
+{% with submit_text='حفظ المنتج' %}
+
+{% block form_content %}
+<div class="row">
+    <div class="col-md-8">
+        {% include 'dashboard/components/forms/form_field.html' with field=form.name label='اسم المنتج' required=True %}
+        {% include 'dashboard/components/forms/form_field.html' with field=form.description label='وصف المنتج' rows=4 %}
+        
+        <div class="row">
+            <div class="col-md-6">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.store label='المتجر' required=True %}
+            </div>
+            <div class="col-md-6">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.category label='التصنيف' %}
+            </div>
+        </div>
+        
+        {% include 'dashboard/components/forms/form_field.html' with field=form.cover_image_url label='رابط صورة الغلاف' %}
+        
+        <div class="row">
+            <div class="col-md-4">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.average_rating label='متوسط التقييم' %}
+            </div>
+            <div class="col-md-4">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.review_count label='عدد التقييمات' %}
+            </div>
+            <div class="col-md-4">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.selling_count label='عدد المبيعات' %}
+            </div>
+        </div>
+        
+        {% include 'dashboard/components/forms/form_field.html' with field=form.specifications_text label='المواصفات' rows=4 help_text='أدخل المواصفات كل واحدة في سطر منفصل بالصيغة: اسم المواصفة: القيمة' %}
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">إعدادات المنتج</h6>
+            </div>
+            <div class="card-body">
+                {% if not object %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <small><strong>مهم:</strong> يجب إضافة متغير واحد على الأقل مع السعر بعد إنشاء المنتج</small>
+                </div>
+                {% endif %}
+                
+                {% if object and not object.variants.exists %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <small><strong>تحذير:</strong> هذا المنتج لا يحتوي على أي متغيرات أو أسعار!</small>
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-sm btn-primary js-toggle-variant-form">
+                            <i class="fas fa-plus me-1"></i>إضافة متغير الآن
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <h6 class="text-muted">معلومات المنتج</h6>
+                    {% if object %}
+                    <p><small><strong>التقييم:</strong> {{ object.average_rating|floatformat:1 }}/5</small></p>
+                    <p><small><strong>عدد المبيعات:</strong> {{ object.selling_count }}</small></p>
+                    <p><small><strong>عدد المتغيرات:</strong> {{ object.variants.count }}</small></p>
+                    <p><small><strong>عدد الصور:</strong> {{ object.images.count }}</small></p>
+                    {% else %}
+                    <p><small class="text-muted">سيتم عرض الإحصائيات بعد إنشاء المنتج</small></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        {% if object %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">إجراءات سريعة</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/dashboard/products/{{ object.id }}/" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i>عرض التفاصيل
+                    </a>
+                    <button type="button" class="btn btn-outline-success btn-sm js-toggle-variant-form">
+                        <i class="fas fa-plus me-1"></i>إضافة متغير
+                    </button>
+                    <a href="/dashboard/products/" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-list me-1"></i>جميع المنتجات
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- قسم متغيرات المنتج -->
+{% if object %}
+<div class="row mt-4" data-product-id="{{ object.id }}">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="fas fa-tags me-2"></i>متغيرات المنتج والأسعار
+                </h6>
+                <button type="button" class="btn btn-sm btn-outline-primary js-toggle-variant-form">
+                    <i class="fas fa-plus me-1"></i>إضافة متغير
+                </button>
+            </div>
+            <div class="card-body">
+                <!-- رسالة عدم وجود متغيرات -->
+                {% if not object.variants.exists %}
+                <div class="alert alert-warning text-center" id="noVariantsMessage">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-3 text-warning"></i>
+                    <h6>لا توجد متغيرات لهذا المنتج</h6>
+                    <p class="mb-0">يجب إضافة متغير واحد على الأقل مع السعر لعرض المنتج للعملاء</p>
+                </div>
+                {% endif %}
+                
+                <!-- نموذج إضافة متغير مدمج -->
+                <div class="collapse" id="variantFormCollapse">
+                    <div class="border rounded p-3 bg-light">
+                        <h6 class="mb-3">
+                            <i class="fas fa-plus-circle me-2"></i>إضافة متغير جديد
+                        </h6>
+                        <div id="variantForm">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="price" class="form-label">السعر <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" placeholder="0.00" required>
+                                            <span class="input-group-text">ريال</span>
+                                        </div>
+                                        <div class="form-text">سعر هذا المتغير بالريال السعودي</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="sku" class="form-label">كود المنتج (SKU)</label>
+                                        <input type="text" class="form-control" id="sku" name="sku" placeholder="كود فريد للمنتج">
+                                        <div class="form-text">كود فريد للمنتج (اختياري)</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="options_text" class="form-label">خيارات المتغير</label>
+                                        <textarea class="form-control" id="options_text" name="options_text" rows="3" placeholder="مثال:&#10;اللون: أسود&#10;الحجم: كبير&#10;الذاكرة: 256GB"></textarea>
+                                        <div class="form-text">أدخل خيارات المتغير، كل خيار في سطر منفصل بصيغة: المفتاح: القيمة</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="cover_image_url" class="form-label">رابط صورة المتغير</label>
+                                        <input type="url" class="form-control" id="cover_image_url" name="cover_image_url" placeholder="https://example.com/image.jpg">
+                                        <div class="form-text">رابط مباشر لصورة هذا المتغير (اختياري)</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary" id="cancelVariantBtn">
+                                    <i class="fas fa-times me-1"></i>إلغاء
+                                </button>
+                                <button type="button" class="btn btn-primary" id="submitVariantBtn">
+                                    <i class="fas fa-save me-1"></i>
+                                    <span class="button-text">حفظ المتغير</span>
+                                    <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- جدول المتغيرات الموجودة -->
+                {% if object.variants.exists %}
+                <div class="mt-3">
+                    {{ variants_table|safe }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+

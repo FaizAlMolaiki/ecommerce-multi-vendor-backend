@@ -1,0 +1,56 @@
+{% extends 'dashboard/base/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="mb-1 text-danger">{{ page_title|default:'تأكيد الحذف' }}</h1>
+        {% if page_subtitle %}
+        <p class="text-muted mb-0">{{ page_subtitle }}</p>
+        {% endif %}
+    </div>
+    
+    {% if back_url %}
+    <div>
+        <a href="{{ back_url }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-right me-1"></i>{{ back_text|default:'العودة' }}
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    تحذير - عملية حذف
+                </h5>
+            </div>
+            
+            <div class="card-body">
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    {% include 'dashboard/components/forms/delete_confirmation.html' with object=object item_type=item_type related_data=related_data %}
+                    
+                    {% block additional_content %}
+                    {% endblock %}
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <button type="submit" id="deleteButton" class="btn btn-outline-danger" disabled>
+                            <i class="fas fa-trash me-1"></i>{{ delete_text|default:'حذف نهائي' }}
+                        </button>
+                        
+                        {% if cancel_url %}
+                        <a href="{{ cancel_url }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>{{ cancel_text|default:'إلغاء' }}
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
