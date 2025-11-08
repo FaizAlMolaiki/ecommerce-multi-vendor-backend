@@ -1,0 +1,195 @@
+{% extends 'dashboard/layouts/form_layout.html' %}
+
+{% block title %}
+{% if object %}تعديل التصنيف - {{ object.name }}{% else %}إضافة تصنيف جديد{% endif %} - لوحة التحكم
+{% endblock %}
+
+{% with page_title=object.name|default:'إضافة تصنيف جديد' %}
+{% with form_title='بيانات التصنيف' %}
+{% with form_icon='tag' %}
+{% with back_url='/dashboard/categories/' %}
+{% with submit_text='حفظ التصنيف' %}
+
+{% block form_content %}
+<div class="row">
+    <div class="col-md-8">
+        {% include 'dashboard/components/forms/form_field.html' with field=form.name label='اسم التصنيف' required=True %}
+        
+        {% include 'dashboard/components/forms/form_field.html' with field=form.description label='الوصف' %}
+        
+        <div class="row">
+            <div class="col-md-6">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.category_type label='نوع التصنيف' required=True %}
+            </div>
+            <div class="col-md-6">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.parent label='التصنيف الأب' %}
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.icon label='أيقونة التصنيف' help_text='مثال: fas fa-laptop, fas fa-mobile-alt' %}
+            </div>
+            <div class="col-md-6">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.sort_order label='ترتيب العرض' %}
+            </div>
+        </div>
+        
+        {% if form.image %}
+        {% include 'dashboard/components/forms/form_field.html' with field=form.image label='صورة التصنيف' %}
+        {% endif %}
+        
+        {% if form.meta_title %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-search me-2"></i>إعدادات SEO
+                </h6>
+            </div>
+            <div class="card-body">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.meta_title label='عنوان SEO' %}
+                {% include 'dashboard/components/forms/form_field.html' with field=form.meta_description label='وصف SEO' %}
+                {% include 'dashboard/components/forms/form_field.html' with field=form.slug label='الرابط المخصص (Slug)' %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">الإعدادات</h6>
+            </div>
+            <div class="card-body">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.is_active checkbox_label='تصنيف مفعل' %}
+                {% if form.is_featured %}
+                {% include 'dashboard/components/forms/form_field.html' with field=form.is_featured checkbox_label='تصنيف مميز' %}
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if object %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">معلومات إضافية</h6>
+            </div>
+            <div class="card-body">
+                <p><small><strong>تاريخ الإنشاء:</strong><br>{{ object.created_at|date:"Y-m-d H:i" }}</small></p>
+                {% if object.updated_at %}
+                <p><small><strong>آخر تحديث:</strong><br>{{ object.updated_at|date:"Y-m-d H:i" }}</small></p>
+                {% endif %}
+                {% if object.category_type == 'product' %}
+                <p><small><strong>عدد المنتجات:</strong> {{ object.products.count }}</small></p>
+                {% endif %}
+                <p><small><strong>التصنيفات الفرعية:</strong> {{ object.children.count }}</small></p>
+            </div>
+        </div>
+        
+        {% if object.children.count > 0 %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">التصنيفات الفرعية</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for child in object.children.all|slice:":5" %}
+                    <div class="list-group-item px-0 py-2 border-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="fw-bold">{{ child.name }}</small>
+                                {% if child.category_type == 'product' %}
+                                <br><small class="text-muted">{{ child.products.count }} منتج</small>
+                                {% endif %}
+                            </div>
+                            <a href="/dashboard/categories/{{ child.id }}/" class="btn btn-sm btn-outline-primary">
+                                عرض
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if object.children.count > 5 %}
+                <div class="text-center mt-2">
+                    <a href="/dashboard/categories/?parent={{ object.id }}" class="btn btn-sm btn-outline-secondary">
+                        عرض الكل ({{ object.children.count }})
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">إجراءات سريعة</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if object.category_type == 'product' and object.products.count > 0 %}
+                    <a href="/dashboard/products/?category={{ object.id }}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-boxes me-1"></i>عرض المنتجات
+                    </a>
+                    {% endif %}
+                    <a href="/dashboard/categories/create/?parent={{ object.id }}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-plus me-1"></i>إضافة تصنيف فرعي
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="alert alert-info mt-3">
+    <i class="fas fa-info-circle me-2"></i>
+    <strong>ملاحظة:</strong> 
+    {% if object %}
+        تعديل هذا التصنيف سيؤثر على جميع المنتجات والتصنيفات الفرعية المرتبطة به.
+    {% else %}
+        يمكنك إنشاء تصنيفات فرعية بعد حفظ التصنيف الحالي.
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // تحديث التصنيفات الفرعية عند تغيير نوع التصنيف
+    const categoryTypeField = document.querySelector('#id_category_type');
+    const parentField = document.querySelector('#id_parent');
+    
+    if (categoryTypeField && parentField) {
+        categoryTypeField.addEventListener('change', function() {
+            // يمكن إضافة منطق لتحديث التصنيفات المتاحة حسب النوع
+            console.log('Category type changed to:', this.value);
+        });
+    }
+    
+    // معاينة الأيقونة
+    const iconField = document.querySelector('#id_icon');
+    if (iconField) {
+        iconField.addEventListener('input', function() {
+            const iconPreview = document.querySelector('#icon-preview');
+            if (iconPreview) {
+                iconPreview.className = this.value || 'fas fa-tag';
+            }
+        });
+        
+        // إضافة معاينة الأيقونة
+        const iconGroup = iconField.closest('.mb-3');
+        if (iconGroup && !document.querySelector('#icon-preview')) {
+            const preview = document.createElement('div');
+            preview.className = 'mt-2';
+            preview.innerHTML = '<small class="text-muted">معاينة: </small><i id="icon-preview" class="' + (iconField.value || 'fas fa-tag') + ' text-primary"></i>';
+            iconGroup.appendChild(preview);
+        }
+    }
+});
+</script>
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}

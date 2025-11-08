@@ -1,0 +1,126 @@
+{% extends 'dashboard/layouts/list_layout.html' %}
+
+{% block title %}المنتجات - لوحة التحكم{% endblock %}
+
+{% with page_title='إدارة المنتجات' %}
+{% with create_url='/dashboard/products/create/' %}
+{% with show_filters=True %}
+
+{% block filters %}
+    <div class="col-md-3">
+        <label class="form-label">اسم المنتج</label>
+        <input type="text" name="name" class="form-control" value="{{ filters.name }}" placeholder="ابحث بالاسم...">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">المتجر</label>
+        <select name="store" class="form-select">
+            <option value="">جميع المتاجر</option>
+            {% for s in stores %}
+            <option value="{{ s.id }}" {% if filters.store == s.id|stringformat:'s' %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">التصنيف</label>
+        <select name="category" class="form-select">
+            <option value="">جميع التصنيفات</option>
+            {% for c in categories %}
+            <option value="{{ c.id }}" {% if filters.category == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">الحالة</label>
+        <select name="is_active" class="form-select">
+            <option value="">جميع الحالات</option>
+            <option value="1" {% if filters.is_active == '1' %}selected{% endif %}>متاح</option>
+            <option value="0" {% if filters.is_active == '0' %}selected{% endif %}>غير متاح</option>
+        </select>
+    </div>
+{% endblock %}
+
+{% block table_headers %}
+    <th><i class="fas fa-hashtag me-1"></i>المعرف</th>
+    <th><i class="fas fa-box me-1"></i>المنتج</th>
+    <th><i class="fas fa-store me-1"></i>المتجر</th>
+    <th><i class="fas fa-tag me-1"></i>التصنيف</th>
+    <th><i class="fas fa-money-bill me-1"></i>السعر</th>
+    <th><i class="fas fa-star me-1"></i>التقييم</th>
+    <th><i class="fas fa-toggle-on me-1"></i>الحالة</th>
+    <th><i class="fas fa-cog me-1"></i>الإجراءات</th>
+{% endblock %}
+
+{% block table_row %}
+    <td>#{{ object.id }}</td>
+    <td>
+        <div class="d-flex align-items-center">
+            {% if object.first_image_url %}
+            <img src="{{ object.first_image_url }}" alt="{{ object.name }}" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
+            {% endif %}
+            <div>
+                <div class="fw-bold">{{ object.name }}</div>
+                {% if object.description %}
+                <small class="text-muted">{{ object.description|truncatechars:40 }}</small>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+    <td>
+        <span class="badge bg-info">{{ object.store.name }}</span>
+    </td>
+    <td>
+        {% if object.category %}
+            <span class="badge bg-secondary">{{ object.category.name }}</span>
+        {% else %}
+            <span class="text-muted">غير مصنف</span>
+        {% endif %}
+    </td>
+    <td class="fw-bold text-success">
+        {% if object.first_variant_price %}
+            {{ object.first_variant_price }} ريال
+        {% else %}
+            <span class="text-muted">غير محدد</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="d-flex align-items-center">
+            <span class="me-1">{{ object.average_rating|floatformat:1 }}</span>
+            <small class="text-warning">
+                {% for i in "12345" %}
+                    {% if forloop.counter <= object.average_rating %}
+                        <i class="fas fa-star"></i>
+                    {% else %}
+                        <i class="far fa-star"></i>
+                    {% endif %}
+                {% endfor %}
+            </small>
+        </div>
+    </td>
+    <td>
+        {% if object.is_active %}
+            <span class="badge bg-success">متاح</span>
+        {% else %}
+            <span class="badge bg-secondary">غير متاح</span>
+        {% endif %}
+    </td>
+    <td>
+        {% include 'dashboard/components/tables/action_buttons.html' with object=object detail_url='/dashboard/products/' edit_url='/dashboard/products/' delete_url='/dashboard/products/' %}
+        <form method="post" class="d-inline ms-2">
+            {% csrf_token %}
+            <input type="hidden" name="product_id" value="{{ object.id }}">
+            {% if object.is_active %}
+                <button type="submit" name="action" value="deactivate" class="btn btn-sm btn-outline-warning" title="تعطيل المنتج">
+                    <i class="fas fa-pause"></i>
+                </button>
+            {% else %}
+                <button type="submit" name="action" value="activate" class="btn btn-sm btn-outline-success" title="تفعيل المنتج">
+                    <i class="fas fa-play"></i>
+                </button>
+            {% endif %}
+        </form>
+    </td>
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}

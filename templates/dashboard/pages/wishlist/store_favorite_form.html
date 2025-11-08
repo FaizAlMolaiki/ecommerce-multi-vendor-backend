@@ -1,0 +1,13 @@
+{% extends "dashboard/layouts/form_layout.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard-wishlist' %}">المفضلة</a></li>
+<li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+{% endblock %}
+
+{% block form_content %}
+    {% include "dashboard/components/forms/form_field.html" with field=form.user %}
+    {% include "dashboard/components/forms/form_field.html" with field=form.store %}
+{% endblock %}

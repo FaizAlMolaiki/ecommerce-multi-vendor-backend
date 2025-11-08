@@ -1,0 +1,142 @@
+{% extends 'dashboard/layouts/list_layout.html' %}
+
+{% block title %}الكوبونات - لوحة التحكم{% endblock %}
+
+{% with page_title='إدارة الكوبونات' %}
+{% with create_url='/dashboard/pricing/coupons/create/' %}
+{% with create_text='إضافة كوبون جديد' %}
+{% with show_filters=True %}
+
+{% block filters %}
+    {{ block.super }}
+    <div class="col-md-3">
+        <label class="form-label">كود الكوبون</label>
+        <input type="text" name="code" class="form-control" value="{{ filters.code }}" placeholder="اكتب كود الكوبون...">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">الحالة</label>
+        <select name="active" class="form-select">
+            <option value="">جميع الحالات</option>
+            <option value="1" {% if filters.active == '1' %}selected{% endif %}>مفعل</option>
+            <option value="0" {% if filters.active == '0' %}selected{% endif %}>معطل</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">حالة الاستخدام</label>
+        <select name="usage_status" class="form-select">
+            <option value="">الكل</option>
+            <option value="unlimited" {% if filters.usage_status == 'unlimited' %}selected{% endif %}>غير محدود</option>
+            <option value="limited" {% if filters.usage_status == 'limited' %}selected{% endif %}>محدود الاستخدام</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">الصلاحية</label>
+        <select name="validity" class="form-select">
+            <option value="">الكل</option>
+            <option value="valid" {% if filters.validity == 'valid' %}selected{% endif %}>ساري</option>
+            <option value="expired" {% if filters.validity == 'expired' %}selected{% endif %}>منتهي الصلاحية</option>
+        </select>
+    </div>
+{% endblock %}
+
+{% block table_headers %}
+    <th><i class="fas fa-hashtag me-1"></i>المعرف</th>
+    <th><i class="fas fa-ticket-alt me-1"></i>كود الكوبون</th>
+    <th><i class="fas fa-chart-line me-1"></i>الاستخدام</th>
+    <th><i class="fas fa-calendar me-1"></i>الصلاحية</th>
+    <th><i class="fas fa-toggle-on me-1"></i>الحالة</th>
+    <th><i class="fas fa-link me-1"></i>القواعد المرتبطة</th>
+    <th><i class="fas fa-cog me-1"></i>الإجراءات</th>
+{% endblock %}
+
+{% block table_row %}
+    <td>#{{ object.id }}</td>
+    <td>
+        <div class="fw-bold text-primary">
+            <i class="fas fa-ticket-alt me-1"></i>{{ object.code }}
+        </div>
+    </td>
+    <td>
+        {% if object.usage_limit %}
+            <div>
+                <span class="badge bg-warning">محدود</span>
+                <small class="d-block text-muted">الحد الأقصى: {{ object.usage_limit }}</small>
+            </div>
+        {% else %}
+            <span class="badge bg-success">غير محدود</span>
+        {% endif %}
+        
+        {% if object.limit_per_user %}
+            <small class="d-block text-muted">لكل مستخدم: {{ object.limit_per_user }}</small>
+        {% endif %}
+        
+        <small class="d-block text-info">
+            <i class="fas fa-chart-bar me-1"></i>استُخدم: {{ object.redemptions.count }} مرة
+        </small>
+    </td>
+    <td>
+        {% if object.start_at %}
+            <small>من: {{ object.start_at|date:"Y-m-d" }}</small><br>
+        {% endif %}
+        {% if object.end_at %}
+            <small>إلى: {{ object.end_at|date:"Y-m-d" }}</small>
+            {% now "Y-m-d" as today %}
+            {% if object.end_at|date:"Y-m-d" < today %}
+                <br><span class="badge bg-danger">منتهي الصلاحية</span>
+            {% endif %}
+        {% endif %}
+        {% if not object.start_at and not object.end_at %}
+            <span class="text-success">دائم</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if object.active %}
+            <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                <i class="fas fa-check me-1"></i>مفعل
+            </span>
+        {% else %}
+            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">
+                <i class="fas fa-pause me-1"></i>معطل
+            </span>
+        {% endif %}
+    </td>
+    <td>
+        {% with promotion_count=object.promotion_rules.count offer_count=object.offer_rules.count %}
+        {% with total_rules=promotion_count|add:offer_count %}
+        {% if total_rules > 0 %}
+            <span class="badge bg-info">
+                <i class="fas fa-link me-1"></i>{{ total_rules }} قاعدة
+            </span>
+            <div class="mt-1">
+                {% for rule in object.promotion_rules.all|slice:":2" %}
+                    <small class="d-block text-muted">• {{ rule.name }} (خصم)</small>
+                {% endfor %}
+                {% for rule in object.offer_rules.all|slice:":2" %}
+                    <small class="d-block text-muted">• {{ rule.name }} (عرض)</small>
+                {% endfor %}
+                {% if total_rules > 4 %}
+                    <small class="text-muted">و {{ total_rules|add:"-4" }} أخرى...</small>
+                {% endif %}
+            </div>
+        {% else %}
+            <span class="text-muted">غير مرتبط</span>
+        {% endif %}
+        {% endwith %}
+        {% endwith %}
+    </td>
+    <td>
+        <div class="btn-group btn-group-sm" role="group">
+            <a href="{% url 'dashboard-coupon-edit' object.id %}" class="btn btn-outline-warning" title="تعديل الكوبون">
+                <i class="fas fa-edit"></i>
+            </a>
+            <a href="{% url 'dashboard-coupon-delete' object.id %}" class="btn btn-outline-danger" title="حذف الكوبون">
+                <i class="fas fa-trash"></i>
+            </a>
+        </div>
+    </td>
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}

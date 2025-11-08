@@ -1,0 +1,282 @@
+{% extends 'dashboard/layouts/detail_layout.html' %}
+
+{% block title %}تفاصيل المتجر - {{ object.name }} - لوحة التحكم{% endblock %}
+
+{% with page_title='تفاصيل المتجر - '|add:object.name %}
+{% with back_url='/dashboard/stores/' %}
+{% with edit_url='/dashboard/stores/'|add:object.id|add:'/edit/' %}
+{% with delete_url='/dashboard/stores/'|add:object.id|add:'/delete/' %}
+
+{% block detail_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="d-flex align-items-center mb-4">
+            {% if object.logo_url %}
+            <img src="{{ object.logo_url }}" alt="{{ object.name }}" class="rounded me-3" style="width: 80px; height: 80px; object-fit: cover;">
+            {% endif %}
+            <div>
+                <h3 class="mb-1">{{ object.name }}</h3>
+                {% if object.platform_category %}
+                <span class="badge bg-info">{{ object.platform_category.name }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if object.description %}
+        <div class="mb-4">
+            <h6 class="text-muted">وصف المتجر</h6>
+            <p>{{ object.description }}</p>
+        </div>
+        {% endif %}
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-muted mb-3">معلومات الاتصال</h6>
+                <table class="table table-borderless">
+                    {% if object.owner %}
+                    <tr>
+                        <td><i class="fas fa-user-circle text-primary me-2"></i><strong>المالك:</strong></td>
+                        <td>
+                            <a href="{% url 'dashboard-user-detail' object.owner.id %}" class="text-decoration-none">
+                                {{ object.owner.email }}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td><i class="fas fa-hashtag text-primary me-2"></i><strong>معرف المتجر:</strong></td>
+                        <td>#{{ object.id }}</td>
+                    </tr>
+                    <tr>
+                        <td><i class="fas fa-calendar-plus text-primary me-2"></i><strong>تاريخ الإنشاء:</strong></td>
+                        <td>{{ object.created_at|date:"d M Y - H:i" }}</td>
+                    </tr>
+                    {% if object.platform_category %}
+                    <tr>
+                        <td><i class="fas fa-tag text-primary me-2"></i><strong>التصنيف:</strong></td>
+                        <td><span class="badge bg-info">{{ object.platform_category.name }}</span></td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+            
+            <div class="col-md-6">
+                <h6 class="text-muted mb-3">إحصائيات وحالة</h6>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><i class="fas fa-toggle-on text-info me-2"></i><strong>الحالة:</strong></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if object.status == 'active' %}
+                                    <i class="fas fa-toggle-on text-success me-2"></i>
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                                        <i class="fas fa-check me-1"></i>مفعل
+                                    </span>
+                                {% else %}
+                                    <i class="fas fa-toggle-off text-secondary me-2"></i>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">
+                                        <i class="fas fa-pause me-1"></i>معطل
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><i class="fas fa-cubes text-primary me-2"></i><strong>عدد المنتجات:</strong></td>
+                        <td><span class="badge bg-info">{{ metrics.product_count|default:0 }}</span></td>
+                    </tr>
+                    <tr>
+                        <td><i class="fas fa-shopping-cart text-warning me-2"></i><strong>طلبات معلقة:</strong></td>
+                        <td><span class="badge bg-warning">{{ metrics.pending_count|default:0 }}</span></td>
+                    </tr>
+                    <tr>
+                        <td><i class="fas fa-truck text-success me-2"></i><strong>في التوصيل:</strong></td>
+                        <td><span class="badge bg-success">{{ metrics.in_delivery_count|default:0 }}</span></td>
+                    </tr>
+                    <tr>
+                        <td><i class="fas fa-star text-warning me-2"></i><strong>التقييم:</strong></td>
+                        <td>
+                            <span class="fw-bold">{{ object.average_rating|floatformat:1 }}</span>
+                            <small class="text-muted">(من {{ object.review_count|default:0 }} تقييم)</small>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0">إحصائيات سريعة</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="text-center p-2 bg-primary bg-opacity-10 rounded">
+                            <i class="fas fa-cubes text-primary fs-4 mb-2 d-block"></i>
+                            <h5 class="text-primary mb-0">{{ metrics.product_count|default:0 }}</h5>
+                            <small class="text-muted">منتج</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-2 bg-warning bg-opacity-10 rounded">
+                            <i class="fas fa-clock text-warning fs-4 mb-2 d-block"></i>
+                            <h5 class="text-warning mb-0">{{ metrics.pending_count|default:0 }}</h5>
+                            <small class="text-muted">معلق</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-2 bg-success bg-opacity-10 rounded">
+                            <i class="fas fa-truck text-success fs-4 mb-2 d-block"></i>
+                            <h5 class="text-success mb-0">{{ metrics.in_delivery_count|default:0 }}</h5>
+                            <small class="text-muted">توصيل</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-2 bg-warning bg-opacity-10 rounded">
+                            <i class="fas fa-star text-warning fs-4 mb-2 d-block"></i>
+                            <h5 class="text-warning mb-0">{{ object.average_rating|floatformat:1 }}</h5>
+                            <small class="text-muted">تقييم</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-cubes me-2"></i>أحدث المنتجات</h6>
+            </div>
+            <div class="card-body">
+                {% if top_products %}
+                    {% for product in top_products %}
+                    <div class="d-flex align-items-center mb-3 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+                        <div class="bg-primary bg-opacity-10 rounded p-2 me-3">
+                            <i class="fas fa-box text-primary"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-medium">{{ product.name|truncatechars:30 }}</div>
+                            <small class="text-muted">مبيعات: {{ product.selling_count|default:0 }}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold text-success">{{ product.price|floatformat:2 }} ر.س</div>
+                            {% if product.is_active %}
+                                <small class="badge bg-success">متاح</small>
+                            {% else %}
+                                <small class="badge bg-secondary">معطل</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div class="text-center mt-3">
+                        <a href="/dashboard/products/?store={{ object.id }}" class="btn btn-outline-primary btn-sm">
+                            عرض جميع المنتجات ({{ metrics.product_count }})
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-box-open fa-2x mb-2 d-block opacity-50"></i>
+                        <p class="mb-0">لا توجد منتجات في هذا المتجر</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>أحدث الطلبات</h6>
+            </div>
+            <div class="card-body">
+                {% if latest_store_orders %}
+                    {% for store_order in latest_store_orders %}
+                    <div class="d-flex align-items-center mb-3 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+                        <div class="bg-success bg-opacity-10 rounded p-2 me-3">
+                            <i class="fas fa-receipt text-success"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-medium">طلب #{{ store_order.id }}</div>
+                            <small class="text-muted">{{ store_order.created_at|date:"d M Y - H:i" }}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold">{{ store_order.grand_total|floatformat:2 }} ر.س</div>
+                            {% if store_order.fulfillment_status == 'PENDING' %}
+                                <small class="badge bg-warning">معلق</small>
+                            {% elif store_order.fulfillment_status == 'SHIPPED' %}
+                                <small class="badge bg-info">تم الشحن</small>
+                            {% elif store_order.fulfillment_status == 'DELIVERED' %}
+                                <small class="badge bg-success">مكتمل</small>
+                            {% else %}
+                                <small class="badge bg-secondary">{{ store_order.fulfillment_status }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div class="text-center mt-3">
+                        <a href="/dashboard/orders/?store={{ object.id }}" class="btn btn-outline-success btn-sm">
+                            عرض جميع الطلبات
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-shopping-cart fa-2x mb-2 d-block opacity-50"></i>
+                        <p class="mb-0">لا توجد طلبات لهذا المتجر</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block sidebar_content %}
+<div class="card mb-3">
+    <div class="card-header bg-info text-white">
+        <h6 class="mb-0">إجراءات سريعة</h6>
+    </div>
+    <div class="card-body">
+        <div class="d-grid gap-2">
+            <a href="/dashboard/products/create/?store={{ object.id }}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-plus me-1"></i>إضافة منتج
+            </a>
+            <a href="/dashboard/orders/?store={{ object.id }}" class="btn btn-outline-success btn-sm">
+                <i class="fas fa-shopping-cart me-1"></i>عرض الطلبات
+            </a>
+            <a href="/dashboard/reviews/?store={{ object.id }}" class="btn btn-outline-warning btn-sm">
+                <i class="fas fa-star me-1"></i>عرض التقييمات
+            </a>
+            <a href="/admin/stores/store/{{ object.id }}/change/" target="_blank" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-cog me-1"></i>فتح في Admin
+            </a>
+            <form method="post" class="mt-1">
+                {% csrf_token %}
+                {% if object.status == 'active' %}
+                <input type="hidden" name="action" value="deactivate">
+                <button type="submit" class="btn btn-outline-warning btn-sm w-100" onclick="return confirm('هل أنت متأكد من تعطيل هذا المتجر؟ سيتم إخفاء جميع منتجاته من العرض.')">
+                  <i class="fas fa-toggle-off me-1"></i>تعطيل المتجر
+                </button>
+                {% else %}
+                <input type="hidden" name="action" value="activate">
+                <button type="submit" class="btn btn-outline-success btn-sm w-100" onclick="return confirm('هل أنت متأكد من تفعيل هذا المتجر؟ سيتم عرض جميع منتجاته للعملاء.')">
+                  <i class="fas fa-toggle-on me-1"></i>تفعيل المتجر
+                </button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+
+{{ block.super }}
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}

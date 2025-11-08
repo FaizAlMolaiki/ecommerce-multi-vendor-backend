@@ -1,0 +1,10 @@
+{% comment %}
+مكون تنبيه الخطأ
+الاستخدام: {% include 'dashboard/components/alerts/error_alert.html' with message='حدث خطأ' %}
+{% endcomment %}
+
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    {{ message|default:'حدث خطأ غير متوقع' }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
+</div>

@@ -1,0 +1,50 @@
+{% extends 'dashboard/layouts/list_layout.html' %}
+{% load static %}
+
+{% block content %}
+{{ block.super }}
+{% endblock %}
+
+{% block filters %}
+<div class="col-md-6">
+  <label class="form-label">بريد المستخدم</label>
+  <input type="text" class="form-control" name="email" value="{{ filters.email }}" placeholder="user@example.com">
+</div>
+<div class="col-md-6">
+  <label class="form-label">المسمى الوظيفي</label>
+  <input type="text" class="form-control" name="job_title" value="{{ filters.job_title }}" placeholder="مثال: مدير عمليات">
+</div>
+{% endblock %}
+
+{% block table_headers %}
+<th>#</th>
+<th>البريد</th>
+<th>المسمى الوظيفي</th>
+<th>صورة البطاقة</th>
+<th>السيرة الذاتية</th>
+<th>إجراءات</th>
+{% endblock %}
+
+{% block table_row %}
+<td>#{{ object.user_id }}</td>
+<td>{{ object.user.email }}</td>
+<td>{{ object.job_title|default:'-' }}</td>
+<td>
+  {% if object.id_card_image %}
+    <a href="{{ object.id_card_image.url }}" target="_blank" class="btn btn-sm btn-outline-primary">عرض</a>
+  {% else %}
+    <span class="text-muted">—</span>
+  {% endif %}
+</td>
+<td>
+  {% if object.resume_cv %}
+    <a href="{{ object.resume_cv.url }}" target="_blank" class="btn btn-sm btn-outline-primary">تنزيل</a>
+  {% else %}
+    <span class="text-muted">—</span>
+  {% endif %}
+</td>
+<td>
+  <a href="{% url 'dashboard-staff-profile-edit' user_id=object.user_id %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a>
+  <a href="{% url 'dashboard-staff-profile-delete' user_id=object.user_id %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+</td>
+{% endblock %}

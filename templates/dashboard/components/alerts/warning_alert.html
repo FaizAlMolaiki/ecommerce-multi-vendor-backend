@@ -1,0 +1,14 @@
+<div class="alert alert-warning alert-dismissible fade show" role="alert">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    <div class="flex-grow-1">
+      {% if alert_title %}
+      <h6 class="alert-heading mb-1">{{ alert_title }}</h6>
+      {% endif %}
+      {{ alert_message }}
+    </div>
+  </div>
+  {% if dismissible %}
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
+  {% endif %}
+</div>

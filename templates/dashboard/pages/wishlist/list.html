@@ -1,0 +1,198 @@
+{% extends 'dashboard/base/base.html' %}
+
+{% block title %}المفضلة - لوحة التحكم{% endblock %}
+
+{% block content %}
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0"><i class="fas fa-heart me-2"></i>المفضلة</h1>
+    <div>
+      <a href="/dashboard/wishlist/product/create/" class="btn btn-primary me-2">
+        <i class="fas fa-plus me-1"></i>إضافة منتج للمفضلة
+      </a>
+      <a href="/dashboard/wishlist/store/create/" class="btn btn-success">
+        <i class="fas fa-plus me-1"></i>إضافة متجر للمفضلة
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-form">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">بريد المستخدم</label>
+        <input class="form-control" type="text" name="email" value="{{ filters.email }}" placeholder="user@example.com">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">المنتج</label>
+        <select class="form-select" name="product">
+          <option value="">الكل</option>
+          {% for p in products %}
+            <option value="{{ p.id }}" {% if filters.product == p.id|stringformat:'s' %}selected{% endif %}>{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">المتجر</label>
+        <select class="form-select" name="store">
+          <option value="">الكل</option>
+          {% for s in stores %}
+            <option value="{{ s.id }}" {% if filters.store == s.id|stringformat:'s' %}selected{% endif %}>{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="fas fa-filter me-1"></i>تطبيق
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Two-column lists -->
+  <div class="row g-3">
+    <!-- Favorite products -->
+    <div class="col-md-6">
+      <div class="card p-3 h-100">
+        <h5 class="mb-3"><i class="fas fa-box-heart me-2"></i>منتجات مفضلة</h5>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th><i class="fas fa-hashtag me-1"></i>ID</th>
+                <th><i class="fas fa-user me-1"></i>المستخدم</th>
+                <th><i class="fas fa-box me-1"></i>المنتج</th>
+                <th><i class="fas fa-calendar me-1"></i>التاريخ</th>
+                <th><i class="fas fa-cogs me-1"></i>العمليات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for i in upf_page.object_list %}
+                <tr>
+                  <td><strong>{{ i.id }}</strong></td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px; font-size: .8rem;">
+                        {{ i.user.first_name.0|default:i.user.email.0|upper }}
+                      </div>
+                      <a href="{% url 'dashboard-user-detail' i.user.id %}" class="text-decoration-none">
+                        {{ i.user.email }}
+                      </a>
+                    </div>
+                  </td>
+                  <td>
+                    <a href="{% url 'dashboard-product-detail' i.product.id %}" class="text-decoration-none">
+                      <i class="fas fa-box me-1"></i>{{ i.product.name }}
+                    </a>
+                    {% if i.product.price %}
+                      <span class="badge bg-success ms-1">{{ i.product.price }} ر.س</span>
+                    {% endif %}
+                  </td>
+                  <td><small class="text-muted">{{ i.created_at|date:"Y/m/d H:i" }}</small></td>
+                  <td>
+                    <a href="{% url 'dashboard-product-favorite-delete' i.id %}" class="btn btn-sm btn-outline-danger" title="حذف">
+                      <i class="fas fa-trash-alt"></i>
+                    </a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-3">لا توجد سجلات</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <nav>
+          <ul class="pagination">
+            {% if upf_page.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?upf_page={{ upf_page.previous_page_number }}&email={{ filters.email }}&product={{ filters.product }}&store={{ filters.store }}">السابق</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">السابق</span></li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">صفحة {{ upf_page.number }} من {{ upf_page.paginator.num_pages }}</span></li>
+            {% if upf_page.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?upf_page={{ upf_page.next_page_number }}&email={{ filters.email }}&product={{ filters.product }}&store={{ filters.store }}">التالي</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">التالي</span></li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Favorite stores -->
+    <div class="col-md-6">
+      <div class="card p-3 h-100">
+        <h5 class="mb-3"><i class="fas fa-store-alt me-2"></i>متاجر مفضلة</h5>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th><i class="fas fa-hashtag me-1"></i>ID</th>
+                <th><i class="fas fa-user me-1"></i>المستخدم</th>
+                <th><i class="fas fa-store me-1"></i>المتجر</th>
+                <th><i class="fas fa-calendar me-1"></i>التاريخ</th>
+                <th><i class="fas fa-cogs me-1"></i>العمليات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for i in usf_page.object_list %}
+                <tr>
+                  <td><strong>{{ i.id }}</strong></td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px; font-size: .8rem;">
+                        {{ i.user.first_name.0|default:i.user.email.0|upper }}
+                      </div>
+                      <a href="{% url 'dashboard-user-detail' i.user.id %}" class="text-decoration-none">
+                        {{ i.user.email }}
+                      </a>
+                    </div>
+                  </td>
+                  <td>
+                    <a href="{% url 'dashboard-store-detail' i.store.id %}" class="text-decoration-none">
+                      <i class="fas fa-store-alt me-1"></i>{{ i.store.name }}
+                    </a>
+                    {% if i.store.description %}
+                      <small class="text-muted d-block">{{ i.store.description|truncatechars:40 }}</small>
+                    {% endif %}
+                  </td>
+                  <td><small class="text-muted">{{ i.created_at|date:"Y/m/d H:i" }}</small></td>
+                  <td>
+                    <a href="{% url 'dashboard-store-favorite-delete' i.id %}" class="btn btn-sm btn-outline-danger" title="حذف">
+                      <i class="fas fa-trash-alt"></i>
+                    </a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-3">لا توجد سجلات</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <nav>
+          <ul class="pagination">
+            {% if usf_page.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?usf_page={{ usf_page.previous_page_number }}&email={{ filters.email }}&product={{ filters.product }}&store={{ filters.store }}">السابق</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">السابق</span></li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">صفحة {{ usf_page.number }} من {{ usf_page.paginator.num_pages }}</span></li>
+            {% if usf_page.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?usf_page={{ usf_page.next_page_number }}&email={{ filters.email }}&product={{ filters.product }}&store={{ filters.store }}">التالي</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">التالي</span></li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+{% endblock %}

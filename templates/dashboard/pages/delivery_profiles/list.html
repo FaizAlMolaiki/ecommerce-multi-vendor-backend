@@ -1,0 +1,67 @@
+{% extends 'dashboard/layouts/list_layout.html' %}
+{% load static %}
+
+{% block content %}
+{{ block.super }}
+{% endblock %}
+
+{% block filters %}
+<div class="col-md-4">
+  <label class="form-label">بريد المستخدم</label>
+  <input type="text" class="form-control" name="email" value="{{ filters.email }}" placeholder="example@email.com">
+</div>
+<div class="col-md-4">
+  <label class="form-label">حالة التحقق</label>
+  <select name="verification_status" class="form-select">
+    <option value="">الكل</option>
+    <option value="PENDING" {% if filters.verification_status == 'PENDING' %}selected{% endif %}>بانتظار</option>
+    <option value="APPROVED" {% if filters.verification_status == 'APPROVED' %}selected{% endif %}>مقبول</option>
+    <option value="REJECTED" {% if filters.verification_status == 'REJECTED' %}selected{% endif %}>مرفوض</option>
+  </select>
+</div>
+<div class="col-md-4">
+  <label class="form-label">موقوف مؤقتاً</label>
+  <select name="suspended" class="form-select">
+    <option value="">الكل</option>
+    <option value="1" {% if filters.suspended == '1' %}selected{% endif %}>نعم</option>
+    <option value="0" {% if filters.suspended == '0' %}selected{% endif %}>لا</option>
+  </select>
+</div>
+{% endblock %}
+
+{% block table_headers %}
+<th>#</th>
+<th>البريد</th>
+<th>نوع المركبة</th>
+<th>حالة التحقق</th>
+<th>موقوف</th>
+<th>آخر ظهور</th>
+<th>إجراءات</th>
+{% endblock %}
+
+{% block table_row %}
+<td>#{{ object.user_id }}</td>
+<td>{{ object.user.email }}</td>
+<td>{{ object.vehicle_type|default:'-' }}</td>
+<td>
+  {% if object.verification_status == 'APPROVED' %}
+    <span class="badge bg-success">مقبول</span>
+  {% elif object.verification_status == 'REJECTED' %}
+    <span class="badge bg-danger">مرفوض</span>
+  {% else %}
+    <span class="badge bg-warning text-dark">بانتظار</span>
+  {% endif %}
+</td>
+<td>
+  {% if object.suspended %}
+    <span class="badge bg-secondary">نعم</span>
+  {% else %}
+    <span class="badge bg-light text-dark">لا</span>
+  {% endif %}
+</td>
+<td>{{ object.last_seen_at|date:'Y-m-d H:i'|default:'-' }}</td>
+<td>
+  <a href="{% url 'dashboard-delivery-profile-edit' user_id=object.user_id %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a>
+  <a href="{% url 'dashboard-delivery-profile-delete' user_id=object.user_id %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+</td>
+{% endblock %}

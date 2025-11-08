@@ -1,0 +1,178 @@
+{% extends 'dashboard/layouts/delete_layout.html' %}
+
+{% block title %}حذف التصنيف - {{ object.name }} - لوحة التحكم{% endblock %}
+
+{% with page_title='حذف التصنيف' %}
+{% with back_url='/dashboard/categories/' %}
+{% with delete_url='/dashboard/categories/'|add:object.id|add:'/delete/' %}
+
+{% block delete_content %}
+    {% include 'dashboard/components/forms/delete_confirmation.html' with object=object object_name='التصنيف' object_display=object.name %}
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>البيانات المرتبطة
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-sitemap text-primary me-2"></i>
+                            <strong>التصنيفات الفرعية:</strong> {{ object.children.count }} تصنيف
+                        </li>
+                        {% if object.category_type == 'product' %}
+                        <li class="mb-2">
+                            <i class="fas fa-boxes text-success me-2"></i>
+                            <strong>المنتجات:</strong> {{ object.products.count }} منتج
+                        </li>
+                        {% endif %}
+                        {% if object.platform_categories.count > 0 %}
+                        <li class="mb-2">
+                            <i class="fas fa-layer-group text-info me-2"></i>
+                            <strong>تصنيفات المنصة:</strong> {{ object.platform_categories.count }} تصنيف
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>معلومات التصنيف
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>اسم التصنيف:</strong> {{ object.name }}</p>
+                    <p><strong>النوع:</strong> 
+                        {% if object.category_type == 'product' %}
+                            <span class="badge bg-primary">تصنيف منتجات</span>
+                        {% elif object.category_type == 'platform' %}
+                            <span class="badge bg-success">تصنيف منصة</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>التصنيف الأب:</strong> 
+                        {% if object.parent %}
+                            {{ object.parent.name }}
+                        {% else %}
+                            تصنيف رئيسي
+                        {% endif %}
+                    </p>
+                    <p><strong>تاريخ الإنشاء:</strong> {{ object.created_at|date:"Y-m-d" }}</p>
+                    <p><strong>الحالة:</strong>
+                        {% if object.is_active %}
+                            <span class="badge bg-success">مفعل</span>
+                        {% else %}
+                            <span class="badge bg-secondary">معطل</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if object.children.count > 0 %}
+    <div class="card mt-4 border-danger">
+        <div class="card-header bg-danger text-white">
+            <h6 class="mb-0">
+                <i class="fas fa-sitemap me-2"></i>التصنيفات الفرعية المرتبطة
+            </h6>
+        </div>
+        <div class="card-body">
+            <p class="mb-3">سيتم حذف التصنيفات الفرعية التالية:</p>
+            <div class="row">
+                {% for child in object.children.all|slice:":6" %}
+                <div class="col-md-4 mb-2">
+                    <div class="border rounded p-2">
+                        <div class="d-flex align-items-center">
+                            {% if child.icon %}
+                            <i class="{{ child.icon }} text-primary me-2"></i>
+                            {% else %}
+                            <i class="fas fa-tag text-secondary me-2"></i>
+                            {% endif %}
+                            <div>
+                                <small class="fw-bold">{{ child.name }}</small>
+                                {% if child.category_type == 'product' %}
+                                <br><small class="text-muted">{{ child.products.count }} منتج</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% if object.children.count > 6 %}
+            <p class="text-muted mt-2">
+                <small>وعدد {{ object.children.count|add:"-6" }} تصنيف فرعي إضافي...</small>
+            </p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if object.category_type == 'product' and object.products.count > 0 %}
+    <div class="card mt-4 border-warning">
+        <div class="card-header bg-warning text-dark">
+            <h6 class="mb-0">
+                <i class="fas fa-boxes me-2"></i>المنتجات المرتبطة
+            </h6>
+        </div>
+        <div class="card-body">
+            <p class="mb-3">المنتجات التالية مرتبطة بهذا التصنيف:</p>
+            <div class="row">
+                {% for product in object.products.all|slice:":6" %}
+                <div class="col-md-4 mb-2">
+                    <div class="border rounded p-2">
+                        <small class="fw-bold d-block">{{ product.name|truncatechars:25 }}</small>
+                        <small class="text-muted">{{ product.price }} ر.س</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% if object.products.count > 6 %}
+            <p class="text-muted mt-2">
+                <small>وعدد {{ object.products.count|add:"-6" }} منتج إضافي...</small>
+            </p>
+            {% endif %}
+            <div class="alert alert-info mt-3 mb-0">
+                <small>
+                    <i class="fas fa-info-circle me-1"></i>
+                    <strong>ملاحظة:</strong> سيتم إلغاء ربط المنتجات بهذا التصنيف، ولكن لن يتم حذف المنتجات نفسها.
+                </small>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if object.children.count > 0 or object.products.count > 0 %}
+    <div class="alert alert-danger mt-4">
+        <h6 class="alert-heading">
+            <i class="fas fa-exclamation-triangle me-2"></i>تحذير مهم
+        </h6>
+        <p class="mb-0">
+            حذف هذا التصنيف سيؤدي إلى:
+        </p>
+        <ul class="mt-2 mb-0">
+            {% if object.children.count > 0 %}
+            <li>حذف جميع التصنيفات الفرعية ({{ object.children.count }}) نهائياً</li>
+            {% endif %}
+            {% if object.category_type == 'product' and object.products.count > 0 %}
+            <li>إلغاء ربط {{ object.products.count }} منتج بهذا التصنيف</li>
+            {% endif %}
+            <li>فقدان جميع البيانات والإعدادات المرتبطة بالتصنيف</li>
+        </ul>
+        <p class="mt-2 mb-0">
+            <strong>هذا الإجراء لا يمكن التراجع عنه!</strong>
+        </p>
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}

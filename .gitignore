@@ -1,0 +1,50 @@
+# البيئات الافتراضية
+venv/
+env/
+.venv/
+.env/
+
+# بايت كود بايثون وملفات الكاش
+*.pyc
+__pycache__/
+
+# قواعد البيانات المحلية
+*.sqlite3
+db.sqlite3
+
+# الإعدادات المحلية والأسرار
+local_settings.py
+*.local.py
+.env
+
+# الوسائط المرفوعة (MEDIA_ROOT)
+media/
+
+# الملفات الثابتة المجمعة (STATIC_ROOT)
+staticfiles/
+# static_collected/ # أو استخدم هذا إذا كان اسم المجلد مختلفًا
+
+# ملفات بيئات التطوير
+.idea/
+.vscode/
+
+# ملفات السجلات
+*.log
+logs/
+
+# ملفات نظام التشغيل
+.DS_Store
+Thumbs.db
+
+# تقارير الاختبار والتغطية
+.coverage
+htmlcov/
+*.py,cover
+
+# مخرجات البناء والتوزيع
+build/
+dist/
+*.egg-info/
+
+**/migrations
+

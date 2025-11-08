@@ -1,0 +1,138 @@
+{% extends 'dashboard/layouts/list_layout.html' %}
+
+{% block title %}الخصومات التلقائية - لوحة التحكم{% endblock %}
+
+{% with page_title='إدارة الخصومات التلقائية' %}
+{% with create_url='/dashboard/pricing/promotions/create/' %}
+{% with create_text='إضافة خصم جديد' %}
+{% with show_filters=True %}
+
+{% block filters %}
+    {{ block.super }}
+    <div class="col-md-3">
+        <label class="form-label">اسم الخصم</label>
+        <input type="text" name="name" class="form-control" value="{{ filters.name }}" placeholder="اكتب اسم الخصم...">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">نوع الخصم</label>
+        <select name="promotion_type" class="form-select">
+            <option value="">جميع الأنواع</option>
+            <option value="PRODUCT_PERCENTAGE" {% if filters.promotion_type == 'PRODUCT_PERCENTAGE' %}selected{% endif %}>نسبة مئوية على المنتجات</option>
+            <option value="PRODUCT_FIXED_AMOUNT" {% if filters.promotion_type == 'PRODUCT_FIXED_AMOUNT' %}selected{% endif %}>مبلغ ثابت على المنتجات</option>
+            <option value="CART_PERCENTAGE" {% if filters.promotion_type == 'CART_PERCENTAGE' %}selected{% endif %}>نسبة مئوية على السلة</option>
+            <option value="CART_FIXED_AMOUNT" {% if filters.promotion_type == 'CART_FIXED_AMOUNT' %}selected{% endif %}>مبلغ ثابت على السلة</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">الحالة</label>
+        <select name="active" class="form-select">
+            <option value="">جميع الحالات</option>
+            <option value="1" {% if filters.active == '1' %}selected{% endif %}>مفعل</option>
+            <option value="0" {% if filters.active == '0' %}selected{% endif %}>معطل</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">مرتبط بكوبون</label>
+        <select name="has_coupon" class="form-select">
+            <option value="">الكل</option>
+            <option value="1" {% if filters.has_coupon == '1' %}selected{% endif %}>مرتبط بكوبون</option>
+            <option value="0" {% if filters.has_coupon == '0' %}selected{% endif %}>تلقائي</option>
+        </select>
+    </div>
+{% endblock %}
+
+{% block table_headers %}
+    <th><i class="fas fa-hashtag me-1"></i>المعرف</th>
+    <th><i class="fas fa-percentage me-1"></i>اسم الخصم</th>
+    <th><i class="fas fa-tag me-1"></i>النوع</th>
+    <th><i class="fas fa-coins me-1"></i>القيمة</th>
+    <th><i class="fas fa-ticket-alt me-1"></i>الكوبون المطلوب</th>
+    <th><i class="fas fa-sort-numeric-down me-1"></i>الأولوية</th>
+    <th><i class="fas fa-toggle-on me-1"></i>الحالة</th>
+    <th><i class="fas fa-calendar me-1"></i>الفترة</th>
+    <th><i class="fas fa-cog me-1"></i>الإجراءات</th>
+{% endblock %}
+
+{% block table_row %}
+    <td>#{{ object.id }}</td>
+    <td>
+        <div class="fw-bold">
+            <i class="fas fa-percentage me-1 text-primary"></i>{{ object.name }}
+        </div>
+        {% if object.min_purchase_amount %}
+        <small class="text-muted">حد أدنى: {{ object.min_purchase_amount }} ر.س</small>
+        {% endif %}
+    </td>
+    <td>
+        {% if 'PERCENTAGE' in object.promotion_type %}
+            <span class="badge bg-info">
+                <i class="fas fa-percent me-1"></i>{{ object.get_promotion_type_display }}
+            </span>
+        {% else %}
+            <span class="badge bg-success">
+                <i class="fas fa-coins me-1"></i>{{ object.get_promotion_type_display }}
+            </span>
+        {% endif %}
+    </td>
+    <td>
+        <strong class="text-primary">
+            {% if 'PERCENTAGE' in object.promotion_type %}
+                {{ object.value }}%
+            {% else %}
+                {{ object.value }} ر.س
+            {% endif %}
+        </strong>
+    </td>
+    <td>
+        {% if object.required_coupon %}
+            <span class="badge bg-warning">
+                <i class="fas fa-ticket-alt me-1"></i>{{ object.required_coupon.code }}
+            </span>
+        {% else %}
+            <span class="text-muted">تلقائي</span>
+        {% endif %}
+    </td>
+    <td>
+        <span class="badge bg-secondary">{{ object.priority }}</span>
+        {% if not object.stackable %}
+            <br><small class="text-warning">غير قابل للتكديس</small>
+        {% endif %}
+    </td>
+    <td>
+        {% if object.active %}
+            <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                <i class="fas fa-check me-1"></i>مفعل
+            </span>
+        {% else %}
+            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">
+                <i class="fas fa-pause me-1"></i>معطل
+            </span>
+        {% endif %}
+    </td>
+    <td>
+        {% if object.start_at %}
+            <small>من: {{ object.start_at|date:"Y-m-d" }}</small><br>
+        {% endif %}
+        {% if object.end_at %}
+            <small>إلى: {{ object.end_at|date:"Y-m-d" }}</small>
+        {% endif %}
+        {% if not object.start_at and not object.end_at %}
+            <span class="text-muted">دائم</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="btn-group btn-group-sm" role="group">
+            <a href="{% url 'dashboard-promotion-edit' object.id %}" class="btn btn-outline-warning" title="تعديل الخصم">
+                <i class="fas fa-edit"></i>
+            </a>
+            <a href="{% url 'dashboard-promotion-delete' object.id %}" class="btn btn-outline-danger" title="حذف الخصم">
+                <i class="fas fa-trash"></i>
+            </a>
+        </div>
+    </td>
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}

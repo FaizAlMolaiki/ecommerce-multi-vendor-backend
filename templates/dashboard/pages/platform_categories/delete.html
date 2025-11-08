@@ -1,0 +1,21 @@
+{% extends "dashboard/layouts/delete_layout.html" %}
+
+{% block title %}حذف تصنيف: {{ category.name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard-platform-categories' %}">تصنيفات المتاجر</a></li>
+<li class="breadcrumb-item active" aria-current="page">حذف</li>
+{% endblock %}
+
+{% block object_info %}
+<p>أنت على وشك حذف التصنيف <strong>{{ category.name }}</strong>.</p>
+<p>هذا الإجراء لا يمكن التراجع عنه.</p>
+{% endblock %}
+
+{% block related_data_warning %}
+{% if stores_count > 0 %}
+<div class="alert alert-warning mt-3">
+    <strong>تحذير:</strong> يوجد <strong>{{ stores_count }}</strong> متجر مرتبط بهذا التصنيف. سيتم تعيين تصنيف هذه المتاجر إلى "بدون تصنيف".
+</div>
+{% endif %}
+{% endblock %}

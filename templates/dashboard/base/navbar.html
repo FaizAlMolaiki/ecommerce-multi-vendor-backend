@@ -1,0 +1,82 @@
+<nav class="navbar navbar-expand-lg navbar-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{% url 'dashboard' %}">
+      <i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMain">
+      <div class="navbar-nav">
+        <a class="nav-link {% if nav_active == 'overview' %}active{% endif %}" href="{% url 'dashboard' %}">
+          <i class="fas fa-chart-pie me-2"></i>نظرة عامة
+        </a>
+        <a class="nav-link {% if nav_active == 'orders' %}active{% endif %}" href="{% url 'dashboard-orders' %}">
+          <i class="fas fa-shopping-cart me-2"></i>الطلبات
+        </a>
+        <a class="nav-link {% if nav_active == 'stores' %}active{% endif %}" href="{% url 'dashboard-stores' %}">
+          <i class="fas fa-store me-2"></i>المتاجر
+        </a>
+        <a class="nav-link {% if nav_active == 'products' %}active{% endif %}" href="{% url 'dashboard-products' %}">
+          <i class="fas fa-box me-2"></i>المنتجات
+        </a>
+        <div class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle {% if nav_active == 'promotions' or nav_active == 'coupons' or nav_active == 'offers' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-percentage me-2"></i>التسعير
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item {% if nav_active == 'promotions' %}active{% endif %}" href="{% url 'dashboard-promotions' %}">
+              <i class="fas fa-percentage me-2"></i>الخصومات التلقائية
+            </a></li>
+            <li><a class="dropdown-item {% if nav_active == 'coupons' %}active{% endif %}" href="{% url 'dashboard-coupons' %}">
+              <i class="fas fa-ticket-alt me-2"></i>الكوبونات
+            </a></li>
+            <li><a class="dropdown-item {% if nav_active == 'offers' %}active{% endif %}" href="{% url 'dashboard-offers' %}">
+              <i class="fas fa-gift me-2"></i>العروض الخاصة
+            </a></li>
+          </ul>
+        </div>
+        <div class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle {% if nav_active == 'platform_categories' or nav_active == 'product_categories' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-tags me-2"></i>التصنيفات
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item {% if nav_active == 'platform_categories' %}active{% endif %}" href="{% url 'dashboard-platform-categories' %}">
+              <i class="fas fa-store me-2"></i>تصنيفات المتاجر
+            </a></li>
+            <li><a class="dropdown-item {% if nav_active == 'product_categories' %}active{% endif %}" href="{% url 'dashboard-product-categories' %}">
+              <i class="fas fa-folder me-2"></i>تصنيفات المنتجات
+            </a></li>
+          </ul>
+        </div>
+        <a class="nav-link {% if nav_active == 'users' %}active{% endif %}" href="{% url 'dashboard-users' %}">
+          <i class="fas fa-users me-2"></i>المستخدمون
+        </a>
+        <a class="nav-link {% if nav_active == 'reviews' %}active{% endif %}" href="{% url 'dashboard-reviews' %}">
+          <i class="fas fa-star me-2"></i>التقييمات
+        </a>
+        <a class="nav-link {% if nav_active == 'wishlist' %}active{% endif %}" href="{% url 'dashboard-wishlist' %}">
+          <i class="fas fa-heart me-2"></i>المفضلة
+        </a>
+      </div>
+      <div class="ms-auto">
+        <div class="navbar-nav">
+          <div class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fas fa-user-circle me-1"></i>{{ user.email|default:'المدير' }}
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="/admin/">
+                <i class="fas fa-cog me-2"></i>Django Admin
+              </a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'admin:logout' %}">
+                <i class="fas fa-sign-out-alt me-2"></i>تسجيل الخروج
+              </a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,240 @@
+{% extends 'dashboard/base/base.html' %}
+{% load static %}
+{% block title %}نظرة عامة - لوحة التحكم{% endblock %}
+{% block content %}
+  {% include 'dashboard/includes/page_header.html' with page_title='لوحة التحكم' page_subtitle='نظرة عامة على النظام والإحصائيات' page_icon='fas fa-tachometer-alt' %}
+
+  <!-- Filters Section -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">
+            <i class="fas fa-calendar-alt me-1"></i>من تاريخ
+          </label>
+          <input class="form-control" type="date" name="start" value="{{ filters.start }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">
+            <i class="fas fa-calendar-alt me-1"></i>إلى تاريخ
+          </label>
+          <input class="form-control" type="date" name="end" value="{{ filters.end }}">
+        </div>
+        <div class="col-md-4">
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary" type="submit">
+              <i class="fas fa-filter me-1"></i>تطبيق الفلتر
+            </button>
+            <a class="btn btn-outline-secondary" href="/dashboard/">
+              <i class="fas fa-refresh me-1"></i>إعادة ضبط
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+    <div class="row g-3">
+      <div class="col-md-3">
+        {% include 'dashboard/components/cards/stat_card.html' with title='طلبات اليوم' value=cards.orders_today icon='fa-shopping-cart' color='orders' data_stat='orders' %}
+      </div>
+      <div class="col-md-3">
+        {% include 'dashboard/components/cards/stat_card.html' with title='مبيعات اليوم' value=cards.revenue_today icon='fa-dollar-sign' color='revenue' data_stat='revenue' %}
+      </div>
+      <div class="col-md-3">
+        {% include 'dashboard/components/cards/stat_card.html' with title='طلبات معلقة' value=cards.so_pending icon='fa-clock' color='pending' data_stat='pending' %}
+      </div>
+      <div class="col-md-3">
+        {% include 'dashboard/components/cards/stat_card.html' with title='قيد التوصيل' value=cards.so_in_delivery icon='fa-truck' color='delivery' data_stat='delivery' %}
+      </div>
+    </div>
+
+    <div class="row g-3 mt-3">
+      <div class="col-lg-8">
+        {% include 'dashboard/components/cards/chart_card.html' with chart_title='تسلسل الطلبات حسب الأيام' chart_id='ordersByDayChart' chart_height='300px' card_class='p-3 h-100' %}
+      </div>
+      <div class="col-lg-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">
+              <i class="fas fa-trophy text-warning me-2"></i>أفضل المنتجات مبيعاً
+            </h5>
+            {% if top_products %}
+              <ul class="list-group list-group-flush">
+                {% for p in top_products|slice:":5" %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                    <div>
+                      <strong>{{ p.name|truncatechars:20 }}</strong>
+                      <br><small class="text-muted">#{{ p.id }}</small>
+                    </div>
+                    <span class="badge bg-success rounded-pill">{{ p.selling_count }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted text-center py-3">لا توجد بيانات متاحة</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mt-3">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-transparent border-0">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-list-alt text-primary me-2"></i>أحدث الطلبات
+              </h5>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-success" onclick="location.reload()">
+                  <i class="fas fa-sync-alt me-1"></i>تحديث
+                </button>
+                <a class="btn btn-sm btn-primary" href="/dashboard/orders/">
+                  <i class="fas fa-external-link-alt me-1"></i>عرض الكل
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            {% if recent_orders %}
+              <div class="table-responsive">
+                <table id="recent-orders-table" class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="border-0 ps-4"><i class="fas fa-hashtag me-1 text-muted"></i>رقم الطلب</th>
+                      <th class="border-0"><i class="fas fa-user me-1 text-muted"></i>العميل</th>
+                      <th class="border-0"><i class="fas fa-store me-1 text-muted"></i>المتجر</th>
+                      <th class="border-0"><i class="fas fa-money-bill me-1 text-muted"></i>المبلغ</th>
+                      <th class="border-0"><i class="fas fa-info-circle me-1 text-muted"></i>الحالة</th>
+                      <th class="border-0"><i class="fas fa-clock me-1 text-muted"></i>التاريخ</th>
+                      <th class="border-0 pe-4 text-center"><i class="fas fa-cog me-1 text-muted"></i>الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for o in recent_orders %}
+                      <tr data-order-id="{{ o.id }}" class="border-bottom">
+                        <td class="ps-4">
+                          <span class="fw-bold text-primary">#{{ o.id }}</span>
+                        </td>
+                        <td>
+                          <div class="d-flex align-items-center">
+                            <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                              <i class="fas fa-user text-secondary"></i>
+                            </div>
+                            <div>
+                              <div class="fw-medium">{{ o.user__email|default:"ضيف" }}</div>
+                              <small class="text-muted">عميل</small>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="d-flex align-items-center">
+                            <i class="fas fa-store text-muted me-2"></i>
+                            <span class="fw-medium">{{ o.store__name|default:"غير محدد" }}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="fw-bold text-success">{{ o.grand_total|floatformat:2 }} ر.س</span>
+                        </td>
+                        <td class="order-status">
+                          <div class="d-flex flex-column gap-1">
+                            <div>
+                              <small class="text-muted me-1">الدفع:</small>
+                              {% if o.payment_status == 'PENDING_PAYMENT' %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning">
+                                  <i class="fas fa-clock me-1"></i>في انتظار الدفع
+                                </span>
+                              {% elif o.payment_status == 'PAID' %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                                  <i class="fas fa-check me-1"></i>مدفوع
+                                </span>
+                              {% elif o.payment_status == 'CANCELLED' %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger">
+                                  <i class="fas fa-times me-1"></i>ملغي
+                                </span>
+                              {% elif o.payment_status == 'REFUNDED' %}
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">
+                                  <i class="fas fa-undo me-1"></i>مسترد
+                                </span>
+                              {% else %}
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">{{ o.payment_status }}</span>
+                              {% endif %}
+                            </div>
+                            <div>
+                              <small class="text-muted me-1">التنفيذ:</small>
+                              {% if o.fulfillment_status == 'PENDING' %}
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">
+                                  <i class="fas fa-hourglass-half me-1"></i>قيد المراجعة
+                                </span>
+                              {% elif o.fulfillment_status == 'ACCEPTED' %}
+                                <span class="badge bg-info bg-opacity-10 text-info border border-info">
+                                  <i class="fas fa-thumbs-up me-1"></i>مقبول
+                                </span>
+                              {% elif o.fulfillment_status == 'PREPARING' %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary">
+                                  <i class="fas fa-utensils me-1"></i>قيد التحضير
+                                </span>
+                              {% elif o.fulfillment_status == 'SHIPPED' %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary">
+                                  <i class="fas fa-truck me-1"></i>تم الشحن
+                                </span>
+                              {% elif o.fulfillment_status == 'DELIVERED' %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                                  <i class="fas fa-check me-1"></i>تم التسليم
+                                </span>
+                              {% elif o.fulfillment_status == 'REJECTED' %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger">
+                                  <i class="fas fa-times me-1"></i>مرفوض
+                                </span>
+                              {% else %}
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">{{ o.fulfillment_status }}</span>
+                              {% endif %}
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div>
+                            <div class="fw-medium">{{ o.created_at|date:"d M Y" }}</div>
+                            <small class="text-muted">{{ o.created_at|date:"H:i" }}</small>
+                          </div>
+                        </td>
+                        <td class="pe-4 text-center">
+                          <a href="/dashboard/orders/{{ o.id }}/" class="btn btn-sm btn-outline-primary" title="عرض التفاصيل">
+                            <i class="fas fa-eye"></i>
+                          </a>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="text-center py-5">
+                <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">لا توجد طلبات حديثة</h5>
+                <p class="text-muted mb-4">لم يتم إنشاء أي طلبات مؤخراً</p>
+                <a href="/dashboard/orders/" class="btn btn-primary">
+                  <i class="fas fa-plus me-2"></i>عرض جميع الطلبات
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  {{ orders_by_day_labels|json_script:"orders-by-day-labels" }}
+  {{ orders_by_day_values|json_script:"orders-by-day-values" }}
+  <script>
+    window.DASHBOARD_DATA = {
+      labels: JSON.parse(document.getElementById('orders-by-day-labels').textContent),
+      values: JSON.parse(document.getElementById('orders-by-day-values').textContent)
+    };
+  </script>
+  <script src="{% static 'js/overview.js' %}"></script>
+{% endblock %}

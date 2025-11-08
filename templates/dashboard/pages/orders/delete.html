@@ -1,0 +1,55 @@
+{% extends 'dashboard/layouts/delete_layout.html' %}
+
+{% block title %}حذف الطلب #{{ object.id }} - لوحة التحكم{% endblock %}
+
+{% with page_title='حذف الطلب #'|add:object.id|stringformat:'s' %}
+{% with item_type='الطلب' %}
+{% with back_url='/dashboard/orders/' %}
+{% with cancel_url='/dashboard/orders/' %}
+
+{% block additional_content %}
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h6 class="text-muted">تفاصيل الطلب:</h6>
+        <p><strong>المستخدم:</strong> {{ object.user.email|default:"ضيف" }}</p>
+        <p><strong>الإجمالي:</strong> {{ object.grand_total }} ريال</p>
+        <p class="mb-1"><strong>حالة الدفع:</strong>
+            {% if object.payment_status == 'PENDING_PAYMENT' %}
+                <span class="badge bg-warning">في انتظار الدفع</span>
+            {% elif object.payment_status == 'PAID' %}
+                <span class="badge bg-success">مدفوع</span>
+            {% elif object.payment_status == 'CANCELLED' %}
+                <span class="badge bg-danger">ملغي (دفع)</span>
+            {% elif object.payment_status == 'REFUNDED' %}
+                <span class="badge bg-secondary">مسترجع</span>
+            {% endif %}
+        </p>
+        <p><strong>حالة التجهيز/التسليم:</strong>
+            {% if object.fulfillment_status == 'PENDING' %}
+                <span class="badge bg-info">قيد المراجعة</span>
+            {% elif object.fulfillment_status == 'ACCEPTED' %}
+                <span class="badge bg-primary">تم القبول</span>
+            {% elif object.fulfillment_status == 'PREPARING' %}
+                <span class="badge bg-primary">قيد التجهيز</span>
+            {% elif object.fulfillment_status == 'SHIPPED' %}
+                <span class="badge bg-primary">تم الشحن</span>
+            {% elif object.fulfillment_status == 'DELIVERED' %}
+                <span class="badge bg-success">تم التوصيل</span>
+            {% elif object.fulfillment_status == 'REJECTED' %}
+                <span class="badge bg-danger">مرفوض</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="col-md-6">
+        <h6 class="text-warning">البيانات المرتبطة:</h6>
+        <ul class="list-unstyled">
+            <li><span class="badge bg-info">{{ object.items.count }}</span> عناصر الطلب</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}

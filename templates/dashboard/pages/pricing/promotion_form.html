@@ -1,0 +1,99 @@
+{% extends 'dashboard/layouts/form_layout.html' %}
+
+{% block title %}
+{% if object %}تعديل الخصم - {{ object.name }}{% else %}إضافة خصم جديد{% endif %} - لوحة التحكم
+{% endblock %}
+
+{% with page_title=object.name|default:'إضافة خصم جديد' %}
+{% with form_title='بيانات الخصم' %}
+{% with form_icon='percentage' %}
+{% with back_url='/dashboard/pricing/promotions/' %}
+{% with submit_text='حفظ الخصم' %}
+
+{% block form_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>المعلومات الأساسية</h6>
+            </div>
+            <div class="card-body">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.name label='اسم الخصم' required=True %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {% include 'dashboard/components/forms/form_field.html' with field=form.promotion_type label='نوع الخصم' required=True %}
+                    </div>
+                    <div class="col-md-6">
+                        {% include 'dashboard/components/forms/form_field.html' with field=form.value label='قيمة الخصم' required=True %}
+                    </div>
+                </div>
+                
+                {% include 'dashboard/components/forms/form_field.html' with field=form.required_coupon label='الكوبون المطلوب (اختياري)' %}
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>نطاق التطبيق</h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>ملاحظة:</strong> إذا تُركت الحقول فارغة، سيتم تطبيق الخصم على جميع المنصة.
+                </div>
+                
+                {% include 'dashboard/components/forms/form_field.html' with field=form.stores label='المتاجر المستهدفة' %}
+                {% include 'dashboard/components/forms/form_field.html' with field=form.categories label='الفئات المستهدفة' %}
+                {% include 'dashboard/components/forms/form_field.html' with field=form.products label='المنتجات المستهدفة' %}
+                {% include 'dashboard/components/forms/form_field.html' with field=form.variants label='المتغيرات المستهدفة' %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-cog me-2"></i>إعدادات الخصم</h6>
+            </div>
+            <div class="card-body">
+                {% include 'dashboard/components/forms/form_field.html' with field=form.active checkbox_label='خصم مفعل' %}
+                
+                <div class="row">
+                    <div class="col-12">
+                        {% include 'dashboard/components/forms/form_field.html' with field=form.start_at label='تاريخ البداية' %}
+                    </div>
+                    <div class="col-12">
+                        {% include 'dashboard/components/forms/form_field.html' with field=form.end_at label='تاريخ النهاية' %}
+                    </div>
+                </div>
+                
+                {% include 'dashboard/components/forms/form_field.html' with field=form.min_purchase_amount label='الحد الأدنى للمبلغ' %}
+                
+                <div class="row">
+                    <div class="col-6">
+                        {% include 'dashboard/components/forms/form_field.html' with field=form.priority label='الأولوية' %}
+                    </div>
+                    <div class="col-6 d-flex align-items-end">
+                        {% include 'dashboard/components/forms/form_field.html' with field=form.stackable checkbox_label='قابل للتكديس' %}
+                    </div>
+                </div>
+                
+                {% if object %}
+                <div class="mt-3 pt-3 border-top">
+                    <h6 class="text-muted">معلومات إضافية</h6>
+                    <p><small><strong>تاريخ الإنشاء:</strong> {{ object.created_at|date:"Y-m-d H:i" }}</small></p>
+                    <p><small><strong>آخر تعديل:</strong> {{ object.updated_at|date:"Y-m-d H:i" }}</small></p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}

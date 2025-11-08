@@ -1,0 +1,28 @@
+{% load static %}
+
+<!-- Modal إضافة/تعديل متغير -->
+<div class="modal fade" id="variantModal" tabindex="-1" aria-labelledby="variantModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="variantModalLabel">إضافة متغير جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <form id="variantForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    {% include 'dashboard/components/forms/form_field.html' with field_name='price' field_type='number' field_label='السعر' field_required=True field_help='سعر هذا المتغير بالريال السعودي' field_attrs='step="0.01" min="0" placeholder="0.00"' %}
+                    
+                    {% include 'dashboard/components/forms/form_field.html' with field_name='sku' field_type='text' field_label='كود المنتج (SKU)' field_help='كود فريد للمنتج (اختياري)' field_attrs='placeholder="كود فريد للمنتج"' %}
+                    
+                    {% include 'dashboard/components/forms/form_field.html' with field_name='options_text' field_type='textarea' field_label='خيارات المتغير' field_help='أدخل خيارات المتغير، كل خيار في سطر منفصل بصيغة: المفتاح: القيمة' field_attrs='rows="3" placeholder="مثال:&#10;اللون: أسود&#10;الحجم: كبير&#10;الذاكرة: 256GB"' %}
+                    
+                    {% include 'dashboard/components/forms/form_field.html' with field_name='cover_image_url' field_type='url' field_label='رابط صورة المتغير' field_help='رابط مباشر لصورة هذا المتغير (اختياري)' field_attrs='placeholder="https://example.com/image.jpg"' %}
+                </div>
+                <div class="modal-footer">
+                    {% include 'dashboard/components/forms/form_buttons.html' with cancel_text='إلغاء' submit_text='حفظ المتغير' cancel_attrs='data-bs-dismiss="modal"' submit_attrs='id="submitVariantBtn"' %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

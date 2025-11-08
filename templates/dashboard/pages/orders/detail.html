@@ -1,0 +1,283 @@
+{% extends 'dashboard/layouts/detail_layout.html' %}
+{% load static %}
+{% block title %}تفاصيل الطلب #{{ order.id }} - لوحة التحكم{% endblock %}
+
+{% block detail_content %}
+<!-- Order Header -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h3 class="mb-1">الطلب #{{ order.id }}</h3>
+        <p class="text-muted mb-2">تم إنشاؤه في {{ order.created_at|date:"d M Y - H:i" }}</p>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            {% if order.payment_status == 'PENDING_PAYMENT' %}
+                <span class="badge bg-warning"><i class="fas fa-clock me-1"></i>في انتظار الدفع</span>
+            {% elif order.payment_status == 'PAID' %}
+                <span class="badge bg-success"><i class="fas fa-check me-1"></i>مدفوع</span>
+            {% elif order.payment_status == 'CANCELLED' %}
+                <span class="badge bg-danger"><i class="fas fa-times me-1"></i>ملغي (دفع)</span>
+            {% elif order.payment_status == 'REFUNDED' %}
+                <span class="badge bg-secondary"><i class="fas fa-undo me-1"></i>مسترجع</span>
+            {% endif %}
+            {% if order.fulfillment_status == 'PENDING' %}
+                <span class="badge bg-info"><i class="fas fa-hourglass-half me-1"></i>قيد المراجعة</span>
+            {% elif order.fulfillment_status == 'ACCEPTED' %}
+                <span class="badge bg-primary"><i class="fas fa-clipboard-check me-1"></i>تم القبول</span>
+            {% elif order.fulfillment_status == 'PREPARING' %}
+                <span class="badge bg-primary"><i class="fas fa-tools me-1"></i>قيد التجهيز</span>
+            {% elif order.fulfillment_status == 'SHIPPED' %}
+                <span class="badge bg-primary"><i class="fas fa-truck me-1"></i>تم الشحن</span>
+            {% elif order.fulfillment_status == 'DELIVERED' %}
+                <span class="badge bg-success"><i class="fas fa-box-open me-1"></i>تم التوصيل</span>
+            {% elif order.fulfillment_status == 'REJECTED' %}
+                <span class="badge bg-danger"><i class="fas fa-ban me-1"></i>مرفوض</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-4 text-end">
+        <h4 class="text-success mb-0">{{ order.grand_total }} ر.س</h4>
+        <small class="text-muted">المبلغ الإجمالي</small>
+    </div>
+</div>
+
+<!-- Order Information -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>معلومات الطلب</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted small">العميل</label>
+                    <div>
+                        {% if order.user %}
+                            <a href="{% url 'dashboard-user-detail' order.user.id %}" class="text-decoration-none">
+                                <i class="fas fa-user me-1"></i>{{ order.user.email }}
+                            </a>
+                        {% else %}
+                            <span class="text-muted"><i class="fas fa-user-times me-1"></i>ضيف (غير مسجل)</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small">مندوب التوصيل</label>
+                    <div>
+                        {% if order.delivery_agent %}
+                            <a href="{% url 'dashboard-user-detail' order.delivery_agent.id %}" class="text-decoration-none">
+                                <i class="fas fa-motorcycle me-1"></i>{{ order.delivery_agent.email|default:'—' }}
+                            </a>
+                        {% else %}
+                            <span class="text-muted">— لم يتم تعيين مندوب بعد</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small">المتجر</label>
+                    <div>
+                        {% if order.store %}
+                            <a href="{% url 'dashboard-store-detail' order.store.id %}" class="text-decoration-none">
+                                <i class="fas fa-store me-1"></i>{{ order.store.name }}
+                            </a>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small">تاريخ الإنشاء</label>
+                    <div><i class="fas fa-calendar-alt me-1"></i>{{ order.created_at|date:"d M Y - H:i" }}</div>
+                </div>
+                <div class="mb-0">
+                    <label class="form-label text-muted small">المبلغ الإجمالي</label>
+                    <div class="fw-bold text-success">{{ order.grand_total }} ر.س</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>عنوان الشحن</h6>
+            </div>
+            <div class="card-body">
+                {% if order.shipping_address_snapshot %}
+                    <div class="small">{{ order.shipping_address_snapshot|truncatechars:200 }}</div>
+                {% else %}
+                    <div class="text-muted">لا يوجد عنوان شحن</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Live Driver Tracking Map -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="fas fa-map-marked-alt me-2"></i>تتبع المندوب (حي)</h6>
+    </div>
+    <div class="card-body">
+        <div id="order-driver-map" style="height: 340px; border-radius: 8px;"></div>
+        <div class="small text-muted mt-2" id="driver-location-text">بانتظار موقع المندوب...</div>
+    </div>
+    <div class="card-footer small text-muted">
+        لا يتم حفظ الموقع في قاعدة البيانات، يتم عرضه لحظياً فقط.
+    </div>
+    <!-- يمكن لاحقاً إضافة بوليلاين لمسار الحركة -->
+    <div class="d-none" id="order-id" data-order-id="{{ order.id }}"></div>
+    {% if not request.user.is_authenticated %}
+        <div class="alert alert-warning m-3">يجب أن تكون مسجلاً لاستقبال التحديثات.</div>
+    {% endif %}
+    {% if request.user.is_authenticated and not request.user.is_staff and not request.user.is_delivery %}
+        <div class="alert alert-info m-3">يتم عرض الموقع فقط للمصرح لهم في هذا السياق.</div>
+    {% endif %}
+</div>
+
+<!-- Order Items -->
+<div class="card">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="fas fa-list me-2"></i>عناصر الطلب</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>المنتج</th>
+                        <th>خيارات المتغير</th>
+                        <th class="text-center">الكمية</th>
+                        <th class="text-end">السعر</th>
+                        <th class="text-end">الإجمالي</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for oi in items %}
+                        <tr>
+                            <td>
+                                {% if oi.variant and oi.variant.product %}
+                                    <a href="{% url 'dashboard-product-detail' oi.variant.product.id %}" class="text-decoration-none">
+                                        {{ oi.product_name_snapshot }}
+                                    </a>
+                                {% else %}
+                                    {{ oi.product_name_snapshot }}
+                                {% endif %}
+                            </td>
+                            <td><small class="text-muted">{{ oi.variant_options_snapshot|default:'—' }}</small></td>
+                            <td class="text-center"><span class="badge bg-light text-dark">{{ oi.quantity }}</span></td>
+                            <td class="text-end">{{ oi.price_at_purchase }} ر.س</td>
+                            <td class="text-end fw-bold">{% widthratio oi.price_at_purchase 1 oi.quantity %} ر.س</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">لا توجد عناصر في هذا الطلب</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+{% endblock %}
+
+{% block extra_scripts %}
+    {{ block.super }}
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="{% static 'js/orders.js' %}"></script>
+{% endblock %}
+
+{% block sidebar_content %}
+<div class="card mb-3">
+  <div class="card-header">
+    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>إحصائيات الطلب</h6>
+  </div>
+  <div class="card-body">
+        <div class="mb-3">
+            <small class="text-muted">المتجر</small>
+            <div class="fw-bold">{{ order.store.name|default:'—' }}</div>
+        </div>
+        <div class="mb-3">
+            <small class="text-muted">إجمالي العناصر</small>
+            <div class="fw-bold">{{ items|length }}</div>
+        </div>
+        <div class="mb-0">
+            <small class="text-muted">المبلغ الإجمالي</small>
+            <div class="fw-bold text-success">{{ order.grand_total }} ر.س</div>
+        </div>
+        <div class="mt-3">
+            <small class="text-muted">رسوم التوصيل</small>
+            <div class="fw-bold">{{ order.delivery_fee }} ر.س</div>
+        </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h6 class="mb-0"><i class="fas fa-receipt me-2"></i>تفاصيل التسعير</h6>
+  </div>
+  <div class="card-body">
+    <div class="mb-2">
+      <small class="text-muted">الإجمالي قبل الخصم (Subtotal)</small>
+      <div class="fw-bold">{{ subtotal }} ر.س</div>
+    </div>
+    <div class="mb-2">
+      <small class="text-muted">قيمة الخصم</small>
+      <div class="fw-bold text-danger">{{ pricing.discounts_total|default:'0.00' }} ر.س</div>
+      {% if coupon_code %}
+      <small class="text-muted">الكوبون: <span class="badge bg-light text-dark">{{ coupon_code }}</span></small>
+      {% endif %}
+    </div>
+    <div class="mb-2">
+      <small class="text-muted">رسوم التوصيل</small>
+      <div class="fw-bold">{{ order.delivery_fee }} ر.س</div>
+    </div>
+    <div class="mb-0">
+      <small class="text-muted">الإجمالي المحسوب</small>
+      <div class="fw-bold text-success">{{ computed_grand_total }} ر.س</div>
+      <small class="text-muted d-block">الإجمالي المخزن حالياً: {{ order.grand_total }} ر.س</small>
+    </div>
+    {% if pricing.applied_rules %}
+    <div class="mt-3 pt-3 border-top">
+      <h6 class="small text-muted mb-2">القواعد المطبقة</h6>
+      <ul class="list-unstyled small mb-0">
+        {% for r in pricing.applied_rules %}
+        <li class="d-flex justify-content-between align-items-center">
+          <span>{{ r.name }}</span>
+          <span class="badge bg-success">-{{ r.amount }} ر.س</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+  <div class="card-footer small text-muted">
+    لتجربة كوبون مختلف مؤقتاً: أضف ?coupon=CODE إلى رابط الصفحة.
+  </div>
+  </div>
+
+<div class="card">
+  <div class="card-header">
+    <h6 class="mb-0"><i class="fas fa-cog me-2"></i>إجراءات</h6>
+  </div>
+  <div class="card-body">
+        {% if order.payment_status == 'PENDING_PAYMENT' %}
+            <form method="post" class="mb-2">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="mark_paid">
+                <button type="submit" class="btn btn-success btn-sm w-100">
+                    <i class="fas fa-check me-1"></i>وضع علامة مدفوع
+                </button>
+            </form>
+        {% endif %}
+        <button onclick="window.print()" class="btn btn-outline-primary btn-sm w-100">
+            <i class="fas fa-print me-1"></i>طباعة
+        </button>
+    </div>
+</div>
+{% endblock %}

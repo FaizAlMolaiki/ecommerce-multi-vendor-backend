@@ -1,0 +1,148 @@
+{% extends 'dashboard/layouts/list_layout.html' %}
+
+{% block title %}العروض الخاصة - لوحة التحكم{% endblock %}
+
+{% with page_title='إدارة العروض الخاصة' %}
+{% with create_url='/dashboard/pricing/offers/create/' %}
+{% with create_text='إضافة عرض جديد' %}
+{% with show_filters=True %}
+
+{% block filters %}
+    {{ block.super }}
+    <div class="col-md-3">
+        <label class="form-label">اسم العرض</label>
+        <input type="text" name="name" class="form-control" value="{{ filters.name }}" placeholder="اكتب اسم العرض...">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">نوع العرض</label>
+        <select name="offer_type" class="form-select">
+            <option value="">جميع الأنواع</option>
+            <option value="BUY_X_GET_Y" {% if filters.offer_type == 'BUY_X_GET_Y' %}selected{% endif %}>اشتر X واحصل على Y</option>
+            <option value="BUNDLE_FIXED_PRICE" {% if filters.offer_type == 'BUNDLE_FIXED_PRICE' %}selected{% endif %}>باقة بسعر ثابت</option>
+            <option value="THRESHOLD_GIFT" {% if filters.offer_type == 'THRESHOLD_GIFT' %}selected{% endif %}>هدية عند مبلغ معين</option>
+            <option value="THRESHOLD_FREE_SHIPPING" {% if filters.offer_type == 'THRESHOLD_FREE_SHIPPING' %}selected{% endif %}>شحن مجاني عند مبلغ معين</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">الحالة</label>
+        <select name="active" class="form-select">
+            <option value="">جميع الحالات</option>
+            <option value="1" {% if filters.active == '1' %}selected{% endif %}>مفعل</option>
+            <option value="0" {% if filters.active == '0' %}selected{% endif %}>معطل</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">مرتبط بكوبون</label>
+        <select name="has_coupon" class="form-select">
+            <option value="">الكل</option>
+            <option value="1" {% if filters.has_coupon == '1' %}selected{% endif %}>مرتبط بكوبون</option>
+            <option value="0" {% if filters.has_coupon == '0' %}selected{% endif %}>تلقائي</option>
+        </select>
+    </div>
+{% endblock %}
+
+{% block table_headers %}
+    <th><i class="fas fa-hashtag me-1"></i>المعرف</th>
+    <th><i class="fas fa-gift me-1"></i>اسم العرض</th>
+    <th><i class="fas fa-tags me-1"></i>نوع العرض</th>
+    <th><i class="fas fa-cogs me-1"></i>الإعدادات</th>
+    <th><i class="fas fa-ticket-alt me-1"></i>الكوبون المطلوب</th>
+    <th><i class="fas fa-sort-numeric-down me-1"></i>الأولوية</th>
+    <th><i class="fas fa-toggle-on me-1"></i>الحالة</th>
+    <th><i class="fas fa-calendar me-1"></i>الفترة</th>
+    <th><i class="fas fa-cog me-1"></i>الإجراءات</th>
+{% endblock %}
+
+{% block table_row %}
+    <td>#{{ object.id }}</td>
+    <td>
+        <div class="fw-bold">
+            <i class="fas fa-gift me-1 text-success"></i>{{ object.name }}
+        </div>
+        {% if object.min_purchase_amount %}
+        <small class="text-muted">حد أدنى: {{ object.min_purchase_amount }} ر.س</small>
+        {% endif %}
+    </td>
+    <td>
+        {% if object.offer_type == 'BUY_X_GET_Y' %}
+            <span class="badge bg-primary">
+                <i class="fas fa-plus me-1"></i>{{ object.get_offer_type_display }}
+            </span>
+        {% elif object.offer_type == 'BUNDLE_FIXED_PRICE' %}
+            <span class="badge bg-info">
+                <i class="fas fa-box me-1"></i>{{ object.get_offer_type_display }}
+            </span>
+        {% elif object.offer_type == 'THRESHOLD_GIFT' %}
+            <span class="badge bg-success">
+                <i class="fas fa-gift me-1"></i>{{ object.get_offer_type_display }}
+            </span>
+        {% elif object.offer_type == 'THRESHOLD_FREE_SHIPPING' %}
+            <span class="badge bg-warning">
+                <i class="fas fa-shipping-fast me-1"></i>{{ object.get_offer_type_display }}
+            </span>
+        {% endif %}
+    </td>
+    <td>
+        {% if object.configuration %}
+            <div class="small">
+                {% for key, value in object.configuration.items %}
+                    <div><strong>{{ key }}:</strong> {{ value }}</div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <span class="text-muted">لا توجد إعدادات</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if object.required_coupon %}
+            <span class="badge bg-warning">
+                <i class="fas fa-ticket-alt me-1"></i>{{ object.required_coupon.code }}
+            </span>
+        {% else %}
+            <span class="text-muted">تلقائي</span>
+        {% endif %}
+    </td>
+    <td>
+        <span class="badge bg-secondary">{{ object.priority }}</span>
+        {% if not object.stackable %}
+            <br><small class="text-warning">غير قابل للتكديس</small>
+        {% endif %}
+    </td>
+    <td>
+        {% if object.active %}
+            <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                <i class="fas fa-check me-1"></i>مفعل
+            </span>
+        {% else %}
+            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">
+                <i class="fas fa-pause me-1"></i>معطل
+            </span>
+        {% endif %}
+    </td>
+    <td>
+        {% if object.start_at %}
+            <small>من: {{ object.start_at|date:"Y-m-d" }}</small><br>
+        {% endif %}
+        {% if object.end_at %}
+            <small>إلى: {{ object.end_at|date:"Y-m-d" }}</small>
+        {% endif %}
+        {% if not object.start_at and not object.end_at %}
+            <span class="text-muted">دائم</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="btn-group btn-group-sm" role="group">
+            <a href="{% url 'dashboard-offer-edit' object.id %}" class="btn btn-outline-warning" title="تعديل العرض">
+                <i class="fas fa-edit"></i>
+            </a>
+            <a href="{% url 'dashboard-offer-delete' object.id %}" class="btn btn-outline-danger" title="حذف العرض">
+                <i class="fas fa-trash"></i>
+            </a>
+        </div>
+    </td>
+{% endblock %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
