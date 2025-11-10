@@ -286,7 +286,7 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC+3'  # المنطقة الزمنية 
+CELERY_TIMEZONE = 'Asia/Riyadh'  # المنطقة الزمنية (السعودية UTC+3) 
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60 # المهام الطويلة جداً يتم إيقافها بعد 30 دقيقة
 # إعدادات Firebase (اختيارية - يتم تفعيلها عند الحاجة)

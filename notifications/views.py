@@ -7,6 +7,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.db import transaction, IntegrityError
+import logging
+
+logger = logging.getLogger(__name__)
 
 from .models import Notification, FCMDevice, NotificationTemplate
 from .serializers import (
@@ -39,7 +43,8 @@ class NotificationListView(generics.ListAPIView):
     
     def get_queryset(self):
         """الحصول على إشعارات المستخدم الحالي فقط"""
-        queryset = Notification.objects.filter(user=self.request.user)
+        # Fix: N+1 Query - إضافة select_related('user') لتحسين الأداء
+        queryset = Notification.objects.filter(user=self.request.user).select_related('user')
         
         # فلترة حسب حالة القراءة
         is_read = self.request.query_params.get('is_read')
@@ -93,11 +98,18 @@ def mark_notification_as_read(request, notification_id):
             'success': True,
             'message': 'تم تعليم الإشعار كمقروء'
         })
-    except Exception as e:
+    except Notification.DoesNotExist:
+        logger.warning(f"Notification {notification_id} not found for user {request.user.id}")
         return Response({
             'success': False,
-            'error': str(e)
-        }, status=status.HTTP_400_BAD_REQUEST)
+            'error': 'الإشعار غير موجود'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error marking notification {notification_id} as read: {str(e)}", exc_info=True)
+        return Response({
+            'success': False,
+            'error': 'حدث خطأ أثناء تحديث الإشعار'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
@@ -113,10 +125,11 @@ def mark_all_as_read(request):
             'updated_count': updated_count
         })
     except Exception as e:
+        logger.error(f"Error marking all notifications as read for user {request.user.id}: {str(e)}", exc_info=True)
         return Response({
             'success': False,
-            'error': str(e)
-        }, status=status.HTTP_400_BAD_REQUEST)
+            'error': 'حدث خطأ أثناء تحديث الإشعارات'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['DELETE'])
@@ -135,11 +148,18 @@ def delete_notification(request, notification_id):
             'success': True,
             'message': 'تم حذف الإشعار'
         })
-    except Exception as e:
+    except Notification.DoesNotExist:
+        logger.warning(f"Notification {notification_id} not found for deletion by user {request.user.id}")
         return Response({
             'success': False,
-            'error': str(e)
-        }, status=status.HTTP_400_BAD_REQUEST)
+            'error': 'الإشعار غير موجود'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error deleting notification {notification_id}: {str(e)}", exc_info=True)
+        return Response({
+            'success': False,
+            'error': 'حدث خطأ أثناء حذف الإشعار'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['DELETE'])
@@ -155,10 +175,11 @@ def delete_all_read_notifications(request):
             'deleted_count': deleted_count
         })
     except Exception as e:
+        logger.error(f"Error deleting read notifications for user {request.user.id}: {str(e)}", exc_info=True)
         return Response({
             'success': False,
-            'error': str(e)
-        }, status=status.HTTP_400_BAD_REQUEST)
+            'error': 'حدث خطأ أثناء حذف الإشعارات'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
@@ -174,10 +195,28 @@ def notification_stats(request):
             'data': serializer.data
         })
     except Exception as e:
+        logger.error(f"Error getting notification stats for user {request.user.id}: {str(e)}", exc_info=True)
         return Response({
             'success': False,
-            'error': str(e)
-        }, status=status.HTTP_400_BAD_REQUEST)
+            'error': 'حدث خطأ أثناء جلب الإحصائيات'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def unread_notification_count(request):
+    """الحصول على عدد الإشعارات غير المقروءة"""
+    try:
+        unread_count = request.user.notifications.filter(is_read=False).count()
+        
+        return Response({
+            'unread_count': unread_count
+        })
+    except Exception as e:
+        logger.error(f"Error getting unread count for user {request.user.id}: {str(e)}", exc_info=True)
+        return Response({
+            'unread_count': 0
+        }, status=status.HTTP_200_OK)  # Return 0 on error instead of 500
 
 
 class FCMDeviceCreateView(generics.CreateAPIView):
@@ -185,43 +224,74 @@ class FCMDeviceCreateView(generics.CreateAPIView):
     serializer_class = FCMDeviceSerializer
     permission_classes = [permissions.AllowAny]  # السماح للجميع بتسجيل الأجهزة
     
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
+        """
+        Fix: Race Condition - استخدام get_or_create مع transaction.atomic
+        لمنع إنشاء أجهزة مكررة عند الطلبات المتزامنة
+        """
         registration_token = request.data.get('registration_token')
         
-        # البحث عن جهاز موجود بنفس الـ token
-        device = FCMDevice.objects.filter(registration_token=registration_token).first()
+        if not registration_token:
+            return Response({
+                'success': False,
+                'error': 'رمز التسجيل مطلوب'
+            }, status=status.HTTP_400_BAD_REQUEST)
         
-        if device:
-            # تحديث الجهاز الموجود
-            serializer = self.get_serializer(device, data=request.data, partial=True)
-            serializer.is_valid(raise_exception=True)
+        try:
+            # استخدام get_or_create بدلاً من filter().first()
+            device, created = FCMDevice.objects.get_or_create(
+                registration_token=registration_token,
+                defaults={
+                    'device_type': request.data.get('device_type', 'android'),
+                    'device_name': request.data.get('device_name', ''),
+                    'user': request.user if request.user.is_authenticated else None,
+                    'last_used_at': timezone.now(),
+                    'is_active': True
+                }
+            )
             
-            # تحديث المستخدم والبيانات الأخرى
-            if request.user.is_authenticated:
-                device = serializer.save(user=request.user, last_used_at=timezone.now(), is_active=True)
+            if not created:
+                # تحديث الجهاز الموجود
+                device.device_type = request.data.get('device_type', device.device_type)
+                device.device_name = request.data.get('device_name', device.device_name)
+                device.last_used_at = timezone.now()
+                device.is_active = True
+                
+                if request.user.is_authenticated:
+                    device.user = request.user
+                
+                device.save()
+                
+                logger.info(f"Updated existing FCM device {device.id} for user {device.user.id if device.user else 'anonymous'}")
+                
+                return Response({
+                    'success': True,
+                    'message': 'تم تحديث الجهاز بنجاح',
+                    'device_id': device.id
+                }, status=status.HTTP_200_OK)
             else:
-                device = serializer.save(last_used_at=timezone.now(), is_active=True)
-            
+                logger.info(f"Created new FCM device {device.id} for user {device.user.id if device.user else 'anonymous'}")
+                
+                return Response({
+                    'success': True,
+                    'message': 'تم تسجيل الجهاز بنجاح',
+                    'device_id': device.id
+                }, status=status.HTTP_201_CREATED)
+                
+        except IntegrityError as e:
+            # في حالة حدوث خطأ integrity (نادر جداً مع get_or_create + transaction)
+            logger.error(f"IntegrityError creating FCM device: {str(e)}", exc_info=True)
             return Response({
-                'success': True,
-                'message': 'تم تحديث الجهاز بنجاح',
-                'device_id': device.id
-            }, status=status.HTTP_200_OK)
-        else:
-            # إنشاء جهاز جديد
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            
-            if request.user.is_authenticated:
-                device = serializer.save(user=request.user, last_used_at=timezone.now())
-            else:
-                device = serializer.save(user=None, last_used_at=timezone.now())
-            
+                'success': False,
+                'error': 'حدث خطأ في تسجيل الجهاز. يرجى المحاولة مرة أخرى'
+            }, status=status.HTTP_409_CONFLICT)
+        except Exception as e:
+            logger.error(f"Error creating/updating FCM device: {str(e)}", exc_info=True)
             return Response({
-                'success': True,
-                'message': 'تم تسجيل الجهاز بنجاح',
-                'device_id': device.id
-            }, status=status.HTTP_201_CREATED)
+                'success': False,
+                'error': 'حدث خطأ أثناء معالجة الطلب'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
@@ -249,21 +319,31 @@ def update_fcm_token(request):
             device.last_used_at = timezone.now()
             device.save()
             
+            logger.info(f"FCM token updated for user {request.user.id}")
+            
             return Response({
                 'success': True,
                 'message': 'تم تحديث رمز الجهاز'
             })
         else:
+            logger.warning(f"FCM device not found for user {request.user.id} with old_token")
             return Response({
                 'success': False,
                 'error': 'الجهاز غير موجود'
             }, status=status.HTTP_404_NOT_FOUND)
             
-    except Exception as e:
+    except IntegrityError as e:
+        logger.error(f"IntegrityError updating FCM token for user {request.user.id}: {str(e)}", exc_info=True)
         return Response({
             'success': False,
-            'error': str(e)
-        }, status=status.HTTP_400_BAD_REQUEST)
+            'error': 'الرمز الجديد مستخدم بالفعل'
+        }, status=status.HTTP_409_CONFLICT)
+    except Exception as e:
+        logger.error(f"Error updating FCM token for user {request.user.id}: {str(e)}", exc_info=True)
+        return Response({
+            'success': False,
+            'error': 'حدث خطأ أثناء تحديث رمز الجهاز'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
@@ -285,21 +365,24 @@ def deactivate_fcm_device(request):
         ).update(is_active=False)
         
         if updated_count > 0:
+            logger.info(f"FCM device deactivated for user {request.user.id}")
             return Response({
                 'success': True,
                 'message': 'تم إلغاء تفعيل الجهاز'
             })
         else:
+            logger.warning(f"FCM device not found for deactivation by user {request.user.id}")
             return Response({
                 'success': False,
                 'error': 'الجهاز غير موجود'
             }, status=status.HTTP_404_NOT_FOUND)
             
     except Exception as e:
+        logger.error(f"Error deactivating FCM device for user {request.user.id}: {str(e)}", exc_info=True)
         return Response({
             'success': False,
-            'error': str(e)
-        }, status=status.HTTP_400_BAD_REQUEST)
+            'error': 'حدث خطأ أثناء إلغاء تفعيل الجهاز'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # Views للمشرفين فقط
@@ -383,8 +466,21 @@ def send_template_notification(request):
             'count': len(notifications)
         }, status=status.HTTP_200_OK)
         
-    except Exception as e:
+    except NotificationTemplate.DoesNotExist:
+        logger.warning(f"Template not found for identifier: {template_identifier}")
         return Response({
             'success': False,
-            'error': str(e)
+            'error': 'القالب غير موجود'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except KeyError as e:
+        logger.error(f"Missing template variable: {str(e)}", exc_info=True)
+        return Response({
+            'success': False,
+            'error': 'بيانات القالب غير مكتملة. يرجى التحقق من المتغيرات المطلوبة'
         }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error(f"Error sending template notification: {str(e)}", exc_info=True)
+        return Response({
+            'success': False,
+            'error': 'حدث خطأ أثناء إرسال الإشعارات'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

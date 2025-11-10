@@ -33,27 +33,46 @@ class NotificationService:
         priority=NotificationPriority.NORMAL,
         data=None, 
         image_url=None, 
-        related_id=None,
+        content_object=None,  # ✅ GenericForeignKey support
         send_fcm=True,
         send_email=False
     ):
         """إرسال إشعار لمستخدم محدد"""
+        from django.contrib.contenttypes.models import ContentType
         
         # حفظ الإشعار في قاعدة البيانات
-        notification = Notification.objects.create(
-            user=user,
-            title=title,
-            body=body,
-            type=notification_type,
-            priority=priority,
-            data=data or {},
-            image_url=image_url,
-            related_id=related_id
-        )
+        notification_data = {
+            'user': user,
+            'title': title,
+            'body': body,
+            'type': notification_type,
+            'priority': priority,
+            'data': data or {},
+            'image_url': image_url,
+        }
+        
+        # إضافة GenericForeignKey إذا كان موجوداً
+        if content_object is not None:
+            notification_data['content_object'] = content_object
+        
+        notification = Notification.objects.create(**notification_data)
         
         # إرسال إشعار Firebase إذا كان مطلوباً
         if send_fcm and is_fcm_enabled():
-            NotificationService._send_fcm_to_user(user, title, body, data, image_url)
+            # إضافة notification_id و type و priority للـ data قبل الإرسال
+            fcm_data = (data or {}).copy()
+            fcm_data['notification_id'] = str(notification.id)
+            fcm_data['type'] = notification_type  # إضافة النوع
+            fcm_data['priority'] = priority  # إضافة الأولوية
+            
+            # إضافة GenericForeignKey data إذا كان موجوداً
+            if content_object is not None:
+                from django.contrib.contenttypes.models import ContentType
+                content_type_obj = ContentType.objects.get_for_model(content_object)
+                fcm_data['content_type'] = f'{content_type_obj.app_label}.{content_type_obj.model}'
+                fcm_data['object_id'] = str(content_object.pk)
+            
+            NotificationService._send_fcm_to_user(user, title, body, fcm_data, image_url)
         
         # إرسال بريد إلكتروني للإشعارات ذات الأولوية العالية
         if send_email or priority in [NotificationPriority.HIGH, NotificationPriority.URGENT]:
@@ -76,33 +95,65 @@ class NotificationService:
         priority=NotificationPriority.NORMAL,
         data=None, 
         image_url=None, 
-        related_id=None,
+        content_object=None,  # ✅ GenericForeignKey support
         send_fcm=True
     ):
         """إرسال إشعار لعدة مستخدمين"""
+        from django.contrib.contenttypes.models import ContentType
         
         users = User.objects.filter(id__in=user_ids)
         notifications = []
         
+        # تحضير content_type و object_id إذا كان content_object موجوداً
+        content_type_id = None
+        object_id = None
+        if content_object is not None:
+            content_type_id = ContentType.objects.get_for_model(content_object).id
+            object_id = content_object.pk
+        
         for user in users:
-            notifications.append(Notification(
-                user=user,
-                title=title,
-                body=body,
-                type=notification_type,
-                priority=priority,
-                data=data or {},
-                image_url=image_url,
-                related_id=related_id
-            ))
+            notification_data = {
+                'user': user,
+                'title': title,
+                'body': body,
+                'type': notification_type,
+                'priority': priority,
+                'data': data or {},
+                'image_url': image_url,
+            }
+            
+            # إضافة GenericForeignKey
+            if content_type_id and object_id:
+                notification_data['content_type_id'] = content_type_id
+                notification_data['object_id'] = object_id
+            
+            notifications.append(Notification(**notification_data))
         
         # إنشاء الإشعارات بشكل مجمع
         created_notifications = Notification.objects.bulk_create(notifications)
         
         # إرسال FCM للمستخدمين
         if send_fcm:
+            # إنشاء map من user إلى notification
+            user_notification_map = {notif.user_id: notif for notif in created_notifications}
+            
             for user in users:
-                NotificationService._send_fcm_to_user(user, title, body, data, image_url)
+                notification = user_notification_map.get(user.id)
+                if notification:
+                    # إضافة notification_id و type و priority للـ data
+                    fcm_data = (data or {}).copy()
+                    fcm_data['notification_id'] = str(notification.id)
+                    fcm_data['type'] = notification_type
+                    fcm_data['priority'] = priority
+                    
+                    # إضافة GenericForeignKey data إذا كان موجوداً
+                    if notification.content_type_id and notification.object_id:
+                        from django.contrib.contenttypes.models import ContentType
+                        content_type_obj = ContentType.objects.get(id=notification.content_type_id)
+                        fcm_data['content_type'] = f'{content_type_obj.app_label}.{content_type_obj.model}'
+                        fcm_data['object_id'] = str(notification.object_id)
+                    
+                    NotificationService._send_fcm_to_user(user, title, body, fcm_data, image_url)
         
         logger.info(f"Notification sent to {len(users)} users: {title}")
         return created_notifications
@@ -192,53 +243,66 @@ class NotificationService:
             return
             
         try:
-            # إعداد رسالة FCM
-            message = messaging.MulticastMessage(
-                notification=messaging.Notification(
-                    title=title,
-                    body=body,
-                    image=image_url
-                ),
-                data={str(k): str(v) for k, v in (data or {}).items()},  # تحويل جميع القيم إلى strings
-                tokens=tokens,
-                android=messaging.AndroidConfig(
-                    notification=messaging.AndroidNotification(
-                        channel_id='high_importance_channel',
-                        priority='high',
-                        default_sound=True,
-                        default_vibrate_timings=True,
-                        default_light_settings=True
-                    )
-                ),
-                apns=messaging.APNSConfig(
-                    payload=messaging.APNSPayload(
-                        aps=messaging.Aps(
-                            alert=messaging.ApsAlert(title=title, body=body),
-                            sound='default',
-                            badge=1
+            # تحويل tokens إلى list إذا لم يكن
+            if not isinstance(tokens, list):
+                tokens = [tokens]
+            
+            success_count = 0
+            failure_count = 0
+            failed_tokens = []
+            
+            # إرسال لكل token بشكل منفصل (أكثر موثوقية من send_multicast)
+            for token in tokens:
+                try:
+                    message = messaging.Message(
+                        notification=messaging.Notification(
+                            title=title,
+                            body=body,
+                            image=image_url
+                        ),
+                        data={str(k): str(v) for k, v in (data or {}).items()},
+                        token=token,
+                        android=messaging.AndroidConfig(
+                            notification=messaging.AndroidNotification(
+                                channel_id='high_importance_channel',
+                                priority='high',
+                                default_sound=True,
+                                default_vibrate_timings=True,
+                                default_light_settings=True
+                            )
+                        ),
+                        apns=messaging.APNSConfig(
+                            payload=messaging.APNSPayload(
+                                aps=messaging.Aps(
+                                    alert=messaging.ApsAlert(title=title, body=body),
+                                    sound='default',
+                                    badge=1
+                                )
+                            )
                         )
                     )
-                )
-            )
+                    
+                    # إرسال الرسالة
+                    response = messaging.send(message)
+                    success_count += 1
+                    logger.debug(f'FCM notification sent successfully to token: {token[:20]}...')
+                    
+                except Exception as e:
+                    failure_count += 1
+                    failed_tokens.append(token)
+                    logger.error(f'FCM error for token {token[:20]}...: {e}')
             
-            # إرسال الرسالة
-            response = messaging.send_multicast(message)
+            # تسجيل النتائج
+            logger.info(f'Successfully sent {success_count} FCM notifications')
+            if failure_count > 0:
+                logger.warning(f'Failed to send {failure_count} FCM notifications')
             
-            logger.info(f'Successfully sent {response.success_count} FCM notifications')
-            
-            # معالجة الرموز الفاشلة
-            if response.failure_count > 0:
-                failed_tokens = []
-                for idx, resp in enumerate(response.responses):
-                    if not resp.success:
-                        failed_tokens.append(tokens[idx])
-                        logger.error(f'FCM error: {resp.exception}')
-                
-                # إلغاء تفعيل الرموز الفاشلة
-                if failed_tokens:
-                    FCMDevice.objects.filter(
-                        registration_token__in=failed_tokens
-                    ).update(is_active=False)
+            # إلغاء تفعيل الرموز الفاشلة
+            if failed_tokens:
+                FCMDevice.objects.filter(
+                    registration_token__in=failed_tokens
+                ).update(is_active=False)
+                logger.info(f'Deactivated {len(failed_tokens)} invalid FCM tokens')
                     
         except Exception as e:
             logger.error(f'Error sending FCM notification: {e}')
@@ -252,7 +316,7 @@ class NotificationService:
             body=f'تم استلام طلبك رقم {order.id} بقيمة {order.grand_total} ريال',
             notification_type=NotificationType.ORDER,
             priority=NotificationPriority.HIGH,
-            related_id=order.id,
+            content_object=order,  # ✅ GenericForeignKey
             data={
                 'order_id': str(order.id),
                 'grand_total': str(order.grand_total),
@@ -282,7 +346,7 @@ class NotificationService:
             body=f'طلبك رقم {order.id} أصبح في حالة: {status_text}',
             notification_type=NotificationType.SHIPPING,
             priority=NotificationPriority.HIGH,
-            related_id=order.id,
+            content_object=order,  # ✅ GenericForeignKey
             data={
                 'order_id': str(order.id),
                 'status': new_status,
@@ -299,7 +363,7 @@ class NotificationService:
             body=f'تم إضافة منتج جديد: {product.name}',
             notification_type=NotificationType.PRODUCT,
             priority=NotificationPriority.NORMAL,
-            related_id=product.id,
+            content_object=product,  # ✅ GenericForeignKey
             image_url=product.cover_image_url,
             data={
                 'product_id': str(product.id),
@@ -318,7 +382,7 @@ class NotificationService:
             body=f'{promotion.title} - خصم {promotion.discount_percentage}%',
             notification_type=NotificationType.PROMOTION,
             priority=NotificationPriority.NORMAL,
-            related_id=promotion.id,
+            content_object=promotion,  # ✅ GenericForeignKey
             image_url=getattr(promotion, 'image_url', None),
             data={
                 'promotion_id': str(promotion.id),

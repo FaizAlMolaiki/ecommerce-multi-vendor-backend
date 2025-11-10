@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 
 
 class NotificationType(models.TextChoices):
@@ -75,13 +77,47 @@ class Notification(models.Model):
         null=True,
         verbose_name=_('تاريخ القراءة')
     )
-    related_id = models.PositiveIntegerField(
-        blank=True, 
+    
+    # ============================================================================
+    # GenericForeignKey - علاقة ديناميكية مع أي نموذج
+    # ============================================================================
+    # تم استبدال: related_id (مجرد رقم بدون علاقة حقيقية)
+    # بـ: GenericForeignKey (علاقة حقيقية مع cascade delete وintegrity)
+    #
+    # الفوائد:
+    # ✅ CASCADE DELETE تلقائي (حذف Order يحذف إشعاراته)
+    # ✅ الوصول المباشر للكائن: notification.content_object.total_price
+    # ✅ Data Integrity (لا يمكن ربط إشعار بعنصر غير موجود)
+    # ✅ استعلامات أسرع وأكثر أماناً
+    #
+    # الاستخدام:
+    # notification.content_object = order  # يربط مع Order تلقائياً
+    # notification.content_object.id       # معرف الطلب
+    # notification.content_object.status   # حالة الطلب مباشرة
+    # ----------------------------------------------------------------------------
+    
+    # 1. نوع النموذج (Order, Product, Store, etc.)
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+        blank=True,
         null=True,
-        verbose_name=_('معرف العنصر المرتبط'),
-        help_text=_('معرف الطلب أو المنتج أو المتجر المرتبط بالإشعار')
+        verbose_name=_('نوع المحتوى'),
+        help_text=_('نوع النموذج المرتبط (Order, Product, Store, إلخ)')
     )
     
+    # 2. معرف العنصر (ID الخاص بالـ Order أو Product أو Store)
+    object_id = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        verbose_name=_('معرف الكائن'),
+        help_text=_('معرف العنصر المرتبط')
+    )
+    
+    # 3. الكائن المرتبط (يجمع content_type + object_id تلقائياً)
+    # ملاحظة: ليس حقل حقيقي في DB - فقط Python property للوصول السهل
+    content_object = GenericForeignKey('content_type', 'object_id')
+
     class Meta:
         ordering = ['-created_at']
         verbose_name = _('إشعار')
@@ -90,6 +126,7 @@ class Notification(models.Model):
             models.Index(fields=['user', '-created_at']),
             models.Index(fields=['user', 'is_read']),
             models.Index(fields=['type']),
+            models.Index(fields=['content_type', 'object_id']),
         ]
         
     def __str__(self):

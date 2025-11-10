@@ -10,6 +10,7 @@ urlpatterns = [
     path('<int:notification_id>/delete/', views.delete_notification, name='delete-notification'),
     path('delete-all-read/', views.delete_all_read_notifications, name='delete-all-read'),
     path('stats/', views.notification_stats, name='notification-stats'),
+    path('unread-count/', views.unread_notification_count, name='notification-unread-count'),
     
     # إدارة أجهزة FCM
     path('fcm-device/', views.FCMDeviceCreateView.as_view(), name='fcm-device-create'),

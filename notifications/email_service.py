@@ -81,7 +81,7 @@ class EmailNotificationService:
         context = {
             'user': user,
             'order': order,
-            'site_name': 'منصتنا',
+            'site_name': getattr(settings, 'SITE_NAME', 'منصتنا'),  # Fix: استخدام SITE_NAME من settings
         }
         
         return EmailNotificationService.send_notification_email(
@@ -112,7 +112,7 @@ class EmailNotificationService:
             'user': user,
             'order': order,
             'status_text': status_text,
-            'site_name': 'منصتنا',
+            'site_name': getattr(settings, 'SITE_NAME', 'منصتنا'),  # Fix: استخدام SITE_NAME من settings
         }
         
         return EmailNotificationService.send_notification_email(
@@ -127,10 +127,11 @@ class EmailNotificationService:
     @staticmethod
     def send_welcome_email(user):
         """إرسال رسالة ترحيب"""
-        subject = 'مرحباً بك في منصتنا!'
+        site_name = getattr(settings, 'SITE_NAME', 'منصتنا')  # Fix: استخدام SITE_NAME من settings
+        subject = f'مرحباً بك في {site_name}!'
         context = {
             'user': user,
-            'site_name': 'منصتنا',
+            'site_name': site_name,
         }
         
         return EmailNotificationService.send_notification_email(

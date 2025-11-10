@@ -267,8 +267,8 @@ from django.db.models.signals import post_save, post_delete, pre_save
 from django.dispatch import receiver
 from .models import Order
 from project.websocket_utils import notify_new_order, notify_order_status_change, notify_stats_update, get_dashboard_stats
-from notifications.services import NotificationService
 from notifications.models import NotificationType, NotificationPriority
+from notifications import tasks  # استخدام Celery tasks بدلاً من NotificationService المباشر
 import logging
 
 from project.websocket_utils import notify_new_order, notify_order_status_change, notify_stats_update, get_dashboard_stats
@@ -300,51 +300,51 @@ def order_saved(sender, instance, created, **kwargs):
             notify_new_order_available(instance)
         # ===== إضافة WebSocket للموصل - نهاية التعديل =====
     
-        # إشعار للعميل
+        # إشعار للعميل - Async via Celery
         if instance.user:
             try:
-                NotificationService.send_notification_to_user(
-                    user=instance.user,
+                tasks.send_custom_notification_async.delay(
+                    user_id=instance.user.id,
                     title='تم استلام طلبك! 🎉',
                     body=f'طلب رقم #{instance.id} بقيمة {instance.grand_total} ريال',
                     notification_type=NotificationType.ORDER,
                     priority=NotificationPriority.HIGH,
-                    related_id=instance.id,
+                    content_type_model='orders.order',  # ✅ GenericForeignKey
+                    object_id=instance.id,               # ✅ GenericForeignKey
                     data={
                         'type': 'order',
                         'order_id': str(instance.id),
-                        'related_id': str(instance.id),
                         'grand_total': str(instance.grand_total),
                         'payment_status': instance.payment_status,
                         'fulfillment_status': instance.fulfillment_status
                     }
                 )
-                logger.info(f"Order notification sent to customer for order {instance.id}")
+                logger.info(f"Order notification task queued for customer, order {instance.id}")
             except Exception as e:
-                logger.error(f"Failed to send order notification to customer: {e}")
+                logger.error(f"Failed to queue order notification to customer: {e}")
         
-        # إشعار للبائع (صاحب المتجر)
+        # إشعار للبائع (صاحب المتجر) - Async via Celery
         if instance.store and hasattr(instance.store, 'owner'):
             try:
-                NotificationService.send_notification_to_user(
-                    user=instance.store.owner,
+                tasks.send_custom_notification_async.delay(
+                    user_id=instance.store.owner.id,
                     title='طلب جديد! 🛒',
                     body=f'طلب رقم #{instance.id} من متجرك بقيمة {instance.grand_total} ريال',
                     notification_type=NotificationType.ORDER,
                     priority=NotificationPriority.HIGH,
-                    related_id=instance.id,
+                    content_type_model='orders.order',
+                    object_id=instance.id,
                     data={
                         'type': 'order',
                         'order_id': str(instance.id),
-                        'related_id': str(instance.id),
                         'store_id': str(instance.store.id),
                         'grand_total': str(instance.grand_total),
                         'action': 'vendor_notification'
                     }
                 )
-                logger.info(f"Order notification sent to vendor for order {instance.id}")
+                logger.info(f"Order notification task queued for vendor, order {instance.id}")
             except Exception as e:
-                logger.error(f"Failed to send order notification to vendor: {e}")
+                logger.error(f"Failed to queue order notification to vendor: {e}")
     else:
         
         # تحديث حالة الطلب - WebSocket
@@ -383,23 +383,23 @@ def order_status_changed(sender, instance, **kwargs):
                 
                 if instance.user:
                     try:
-                        NotificationService.send_notification_to_user(
-                            user=instance.user,
+                        tasks.send_custom_notification_async.delay(
+                            user_id=instance.user.id,
                             title='تحديث حالة الدفع',
                             body=f'طلب #{instance.id}: {status_text}',
                             notification_type=NotificationType.PAYMENT,
                             priority=NotificationPriority.HIGH,
-                            related_id=instance.id,
+                            content_type_model='orders.order',
+                            object_id=instance.id,
                             data={
                                 'type': 'order',
                                 'order_id': str(instance.id),
-                                'related_id': str(instance.id),
-                                'payment_status': instance.payment_status
+                                        'payment_status': instance.payment_status
                             }
                         )
-                        logger.info(f"Payment status notification sent for order {instance.id}")
+                        logger.info(f"Payment status notification task queued for order {instance.id}")
                     except Exception as e:
-                        logger.error(f"Failed to send payment status notification: {e}")
+                        logger.error(f"Failed to queue payment status notification: {e}")
             
             # تحقق من تغيير حالة التنفيذ/الشحن
             if old_order.fulfillment_status != instance.fulfillment_status:
@@ -416,67 +416,67 @@ def order_status_changed(sender, instance, **kwargs):
                 
                 if instance.user:
                     try:
-                        NotificationService.send_notification_to_user(
-                            user=instance.user,
+                        tasks.send_custom_notification_async.delay(
+                            user_id=instance.user.id,
                             title='تحديث حالة الطلب',
                             body=f'طلب #{instance.id}: {status_text}',
                             notification_type=NotificationType.SHIPPING,
                             priority=NotificationPriority.HIGH,
-                            related_id=instance.id,
+                            content_type_model='orders.order',
+                            object_id=instance.id,
                             data={
                                 'type': 'order',
                                 'order_id': str(instance.id),
-                                'related_id': str(instance.id),
-                                'fulfillment_status': instance.fulfillment_status,
+                                        'fulfillment_status': instance.fulfillment_status,
                                 'status_text': status_text
                             }
                         )
-                        logger.info(f"Fulfillment status notification sent for order {instance.id}")
+                        logger.info(f"Fulfillment status notification task queued for order {instance.id}")
                     except Exception as e:
-                        logger.error(f"Failed to send fulfillment status notification: {e}")
+                        logger.error(f"Failed to queue fulfillment status notification: {e}")
             
             # تحقق من تعيين موصل
             if old_order.delivery_agent != instance.delivery_agent and instance.delivery_agent:
-                # إشعار للعميل
+                # إشعار للعميل - Async via Celery
                 if instance.user:
                     try:
-                        NotificationService.send_notification_to_user(
-                            user=instance.user,
+                        tasks.send_custom_notification_async.delay(
+                            user_id=instance.user.id,
                             title='تم تعيين موصل لطلبك 🚚',
                             body=f'طلب #{instance.id}: تم تعيين موصل وسيتم توصيل طلبك قريباً',
                             notification_type=NotificationType.SHIPPING,
                             priority=NotificationPriority.NORMAL,
-                            related_id=instance.id,
+                            content_type_model='orders.order',
+                            object_id=instance.id,
                             data={
                                 'type': 'order',
                                 'order_id': str(instance.id),
-                                'related_id': str(instance.id),
-                                'delivery_agent_id': str(instance.delivery_agent.id)
+                                        'delivery_agent_id': str(instance.delivery_agent.id)
                             }
                         )
                     except Exception as e:
-                        logger.error(f"Failed to send delivery agent notification to customer: {e}")
+                        logger.error(f"Failed to queue delivery agent notification to customer: {e}")
                 
-                # إشعار للموصل
+                # إشعار للموصل - Async via Celery
                 try:
-                    NotificationService.send_notification_to_user(
-                        user=instance.delivery_agent,
+                    tasks.send_custom_notification_async.delay(
+                        user_id=instance.delivery_agent.id,
                         title='طلب توصيل جديد! 🚚',
                         body=f'تم تعيينك لتوصيل طلب #{instance.id} بقيمة {instance.grand_total} ريال',
                         notification_type=NotificationType.ORDER,
                         priority=NotificationPriority.HIGH,
-                        related_id=instance.id,
+                        content_type_model='orders.order',
+                        object_id=instance.id,
                         data={
                             'type': 'order',
                             'order_id': str(instance.id),
-                            'related_id': str(instance.id),
-                            'grand_total': str(instance.grand_total),
+                                'grand_total': str(instance.grand_total),
                             'action': 'delivery_assigned'
                         }
                     )
-                    logger.info(f"Delivery assignment notification sent for order {instance.id}")
+                    logger.info(f"Delivery assignment notification task queued for order {instance.id}")
                 except Exception as e:
-                    logger.error(f"Failed to send delivery assignment notification: {e}")
+                    logger.error(f"Failed to queue delivery assignment notification: {e}")
                     
         except Order.DoesNotExist:
             pass
