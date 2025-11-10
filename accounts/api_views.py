@@ -291,6 +291,7 @@ class LogoutView(APIView):
             )
         except Exception as e:
             # لأي أخطاء أخرى غير متوقعة
+            print(f"Unexpected error during logout: {e}")
             return Response(
                 {"error": "An unexpected error occurred during logout."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
